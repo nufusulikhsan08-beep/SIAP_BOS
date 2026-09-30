@@ -8,18 +8,87 @@ function suratRow(){
   if(Number.isInteger(idx) && idx>=0 && idx<state.rows.length)return state.rows[idx];
   return null;
 }
+
+function suratDraftKey(index=state.surat.rowIndex){
+  const i=Number(index);
+  const r=Number.isInteger(i)&&i>=0&&i<state.rows.length?state.rows[i]:null;
+  const no=normalizeNoBukti(r?.noBukti||'');
+  return no?`bukti:${no}`:`row:${i}`;
+}
+function ensureSuratDraftStore(){
+  if(!state.suratByBukti || typeof state.suratByBukti!=='object' || Array.isArray(state.suratByBukti))state.suratByBukti={};
+  return state.suratByBukti;
+}
+function getSuratDraft(index=state.surat.rowIndex){
+  const store=ensureSuratDraftStore();
+  const key=suratDraftKey(index);
+  const draft=store[key];
+  return draft&&typeof draft==='object'?draft:null;
+}
+function captureCurrentSuratDraft(){
+  const idx=Number(state.surat.rowIndex);
+  if(!Number.isInteger(idx)||idx<0||idx>=state.rows.length)return null;
+  const d=state.surat;
+  const elK=suratElement('kepada'),elU=suratElement('untukPembayaran');
+  const draft={
+    bukti:state.rows[idx]?.noBukti||d.bukti||'',
+    kepada:String(elK?.value??d.kepada??''),
+    untukPembayaran:String(elU?.value??d.untukPembayaran??''),
+    savedAt:Date.now()
+  };
+  ensureSuratDraftStore()[suratDraftKey(idx)]=draft;
+  state.surat.kepada=draft.kepada;
+  state.surat.untukPembayaran=draft.untukPembayaran;
+  return draft;
+}
+function restoreSuratDraft(index){
+  const draft=getSuratDraft(index);
+  const k=suratElement('kepada'),u=suratElement('untukPembayaran');
+  // Untuk No. Bukti yang belum pernah disimpan, JANGAN warisi data transaksi lain.
+  const kepada=draft?.kepada??'';
+  const untuk=draft?.untukPembayaran??'';
+  state.surat.kepada=kepada;
+  state.surat.untukPembayaran=untuk;
+  if(k)k.value=kepada;
+  if(u)u.value=untuk;
+  updateSuratDraftStatus();
+  return draft;
+}
+function updateSuratDraftStatus(message){
+  const el=$('suratDraftSaveStatus');
+  if(!el)return;
+  const idx=Number(state.surat.rowIndex);
+  const r=Number.isInteger(idx)&&idx>=0&&idx<state.rows.length?state.rows[idx]:null;
+  const saved=getSuratDraft(idx);
+  if(message){el.textContent=message;el.className='surat-draft-save-status ok';return;}
+  el.textContent=saved?`Tersimpan untuk No. Bukti ${saved.bukti||r?.noBukti||'-'}.`:'Belum ada data tersimpan untuk No. Bukti ini.';
+  el.className='surat-draft-save-status'+(saved?' ok':'');
+}
+async function saveCurrentSuratData(){
+  if(!state.file){window.alert('Pilih/upload BKU terlebih dahulu.');return false;}
+  if(!state.rows.length){window.alert('Baca data BKU terlebih dahulu.');return false;}
+  readSuratFields();
+  const draft=captureCurrentSuratDraft();
+  if(!draft)return false;
+  if(typeof ns.saveActiveProjectNow==='function')await ns.saveActiveProjectNow();
+  else if(typeof ns.saveCurrentFromUi==='function')await ns.saveCurrentFromUi('');
+  updateSuratDraftStatus(`✓ Data No. Bukti ${draft.bukti||'-'} berhasil disimpan.`);
+  return true;
+}
 function enableSuratSection(){
   const ready=Boolean(state.result && state.rows.length>0);
   $('suratBukti').disabled=!ready;
   $('suratPreviewBtn').disabled=!ready;
+  if($('kwitansiPreviewBtn'))$('kwitansiPreviewBtn').disabled=!ready;
   $('suratPrintBtn').disabled=!ready;
+  if($('suratBatchPrintBtn'))$('suratBatchPrintBtn').disabled=!ready;
   updateSuratNextInfo();
   setSuratTabLocked(!ready);
   if(!ready)$('suratBukti').innerHTML='<option value="">Tidak ada transaksi BKU yang dapat dibuatkan surat</option>';
   setPajakTabLocked(!ready);
 }
 function disableSuratSection(){
-  $('suratBukti').disabled=true;$('suratPreviewBtn').disabled=true;$('suratPrintBtn').disabled=true;$('suratPrevBtn').disabled=true;$('suratNextBtn').disabled=true;
+  $('suratBukti').disabled=true;$('suratPreviewBtn').disabled=true;if($('kwitansiPreviewBtn'))$('kwitansiPreviewBtn').disabled=true;$('suratPrintBtn').disabled=true;if($('suratBatchPrintBtn'))$('suratBatchPrintBtn').disabled=true;$('suratPrevBtn').disabled=true;$('suratNextBtn').disabled=true;
   $('suratBukti').innerHTML='<option value="">Baca data BKU terlebih dahulu</option>';
   $('suratPreview').style.display='none';
   try{ns.suratViewerUpdate();}catch(_){}
@@ -34,12 +103,52 @@ function rawRowsForSurat(){
 function suratUraianText(){return rawRowsForSurat().map(x=>clean(x.uraian)).filter(Boolean).join('; ');}
 function moneyWords(n){n=Math.round(Number(n)||0);if(!n)return 'nol rupiah';const a=['','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan','sepuluh','sebelas'];function w(x){if(x<12)return a[x];if(x<20)return w(x-10)+' belas';if(x<100)return w(Math.floor(x/10))+' puluh'+(x%10?' '+w(x%10):'');if(x<200)return 'seratus'+(x%100?' '+w(x%100):'');if(x<1000)return w(Math.floor(x/100))+' ratus'+(x%100?' '+w(x%100):'');if(x<2000)return 'seribu'+(x%1000?' '+w(x%1000):'');if(x<1000000)return w(Math.floor(x/1000))+' ribu'+(x%1000?' '+w(x%1000):'');if(x<1000000000)return w(Math.floor(x/1000000))+' juta'+(x%1000000?' '+w(x%1000000):'');return String(n);}return w(n)+' rupiah';}
 function roman(m){return ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][m-1]||'';}
-function suratData(){const r=suratRow();const d=state.surat;const raw=rawRowsForSurat();return {...d,bukti:r?.noBukti||d.bukti,tanggal:r?.tanggal||d.tanggal,uraian:raw.map(x=>clean(x.uraian)).filter(Boolean).join('; '),rawItems:raw,nominal:r?.pengeluaran||0,kepada:d.kepada||'',untukPembayaran:d.untukPembayaran||''};}
+function suratData(){return suratDataForIndex(state.surat.rowIndex);}
+function suratDataForIndex(index){
+  const i=Number(index);
+  const r=Number.isInteger(i)&&i>=0&&i<state.rows.length?state.rows[i]:null;
+  const d={...state.surat};
+  const draft=getSuratDraft(i);
+  if(draft){d.kepada=String(draft.kepada||'');d.untukPembayaran=String(draft.untukPembayaran||'');d.bukti=draft.bukti||r?.noBukti||'';}
+  const raw=r?((state.rawRows||[]).filter(x=>{const key=normalizeNoBukti(r.noBukti||'');return key?normalizeNoBukti(x.noBukti||'')===key:(x.tanggal===r.tanggal&&clean(x.uraian)===clean(r.uraian));})):[];
+  const rawItems=raw.length?raw:(r?[r]:[]);
+  return {...d,bukti:r?.noBukti||d.bukti||'',tanggal:r?.tanggal||d.tanggal,uraian:rawItems.map(x=>clean(x.uraian)).filter(Boolean).join('; '),rawItems,nominal:r?.pengeluaran||0,kepada:d.kepada||'',untukPembayaran:d.untukPembayaran||''};
+}
+function decorateSuratPages(pages,noBku){
+  const allPages=[...pages.querySelectorAll('.surat-page')];
+  allPages.forEach((pg,i)=>{const foot=pg.querySelector('.surat-page-footer');if(foot)foot.innerHTML=`<span class="sf-page">Halaman ${i+1} dari ${allPages.length}</span>`;});
+  const firstPage=allPages[0];
+  if(firstPage){const box=document.createElement('div');box.className='surat-bku-box';box.textContent=clean(noBku||'-')||'-';firstPage.appendChild(box);}
+  return pages;
+}
+function buildSuratPagesForIndex(index){
+  const d=suratDataForIndex(index);
+  d.sd=normalizeSchoolName(d.sd);
+  d.kecamatan=normalizeKecamatan(d.kecamatan);
+  d.alamat=clean(d.alamat);
+  const dt=dateToInput(d.tanggal).split('-');
+  const dateText=dt.length===3?`${dt[2]}-${dt[1]}-${dt[0]}`:dateDisplay(d.tanggal);
+  const nomorUrut=clean(d.nomor||'').replace(/^400\.3\.5\s*\/\s*/i,'').replace(/\s+/g,'');
+  const jenisBukti=clean(d.bukti||'BPU').toLocaleUpperCase('id-ID');
+  const bulan=dt.length===3?roman(Number(dt[1])):'I';
+  const tahun=dt.length===3?dt[0]:'2026';
+  const num=`400.3.5/${nomorUrut||'001'}/${jenisBukti}/${bulan}/${tahun}`;
+  const tandaTangan=state.surat.tandaTangan||'assets/s_perintah_img_2.png';
+  const logoSekolah=state.surat.logoSekolah||'';
+  const logoKabupaten=state.surat.logoKabupaten||'assets/logo_kabupaten_serang.png';
+  const blocks=buildSuratBlocks(d,num,dateText,tandaTangan,logoSekolah,logoKabupaten);
+  return decorateSuratPages(paginateSurat(blocks),d.bukti);
+}
+function suratDraftReady(index){
+  const draft=getSuratDraft(index);
+  return Boolean(draft && String(draft.kepada||'').trim() && String(draft.untukPembayaran||'').trim());
+}
 function syncSurat(){
   const ready=Boolean(state.result && state.rows.length>0);
   const opts=ready?['<option value="">Pilih transaksi hasil ekstraksi BKU</option>',...state.rows.map((r,i)=>`<option value="${i}">${esc(r.noBukti||'Tanpa No. Bukti')} — ${esc(r.tanggal)} — ${esc(r.uraian.slice(0,100))}${r._count>1?` (${r._count} baris digabung)`:''}</option>` )]:['<option value="">Baca data BKU terlebih dahulu</option>'];
   $('suratBukti').innerHTML=opts.join('');
   $('suratBukti').disabled=!ready;
+  if($('suratBatchPrintBtn'))$('suratBatchPrintBtn').disabled=!ready;
   if(ready && state.surat.rowIndex>=0 && state.surat.rowIndex<state.rows.length){
     $('suratBukti').value=String(state.surat.rowIndex);
   } else if(ready && state.surat.bukti){
@@ -47,7 +156,9 @@ function syncSurat(){
     if(idx>=0){state.surat.rowIndex=idx;$('suratBukti').value=String(idx);}
   }
   $('suratPreviewBtn').disabled=!ready;
+  if($('kwitansiPreviewBtn'))$('kwitansiPreviewBtn').disabled=!ready;
   $('suratPrintBtn').disabled=!ready;
+  if($('suratBatchPrintBtn'))$('suratBatchPrintBtn').disabled=!ready;
   updateSuratNextInfo();
   setSuratTabLocked(!ready);
 }
@@ -95,6 +206,7 @@ function updateSuratNextInfo(){
 function nextSurat(){
   const total=state.rows.length;
   if(total<2)return;
+  captureCurrentSuratDraft();
   readSuratFields();
   const currentIndex=Number.isInteger(state.surat.rowIndex)?state.surat.rowIndex:-1;
   if(currentIndex<0){
@@ -115,6 +227,7 @@ function nextSurat(){
 function prevSurat(){
   const total=state.rows.length;
   if(total<2)return;
+  captureCurrentSuratDraft();
   readSuratFields();
   const currentIndex=Number.isInteger(state.surat.rowIndex)?state.surat.rowIndex:-1;
   if(currentIndex<=0){
@@ -139,6 +252,7 @@ function fillSurat(){
   if(buktiEl)buktiEl.value=String(idx);
   if(tanggalEl)tanggalEl.value=state.surat.tanggal;
   if(uraianEl)uraianEl.value=state.surat.uraian;
+  restoreSuratDraft(idx);
   renderSurat();
   updateSuratNextInfo();
 }
@@ -404,6 +518,14 @@ function paginateSurat(blocks){
 function renderSurat(){
   if(!state.rows.length){$('suratPreview').style.display='none';ns.suratViewerUpdate();return;}
   readSuratFields();
+  if(state.docMode==='kwitansi' && typeof ns.buildKwitansiPagesForIndex==='function'){
+    const kp=ns.buildKwitansiPagesForIndex(state.surat.rowIndex);
+    $('suratPreview').innerHTML='';
+    $('suratPreview').appendChild(kp);
+    $('suratPreview').style.display='block';
+    ns.suratViewerUpdate();
+    return;
+  }
   const d=suratData();
   d.sd=normalizeSchoolName(d.sd);
   d.kecamatan=normalizeKecamatan(d.kecamatan);
@@ -421,22 +543,7 @@ function renderSurat(){
 
   const blocks=buildSuratBlocks(d,num,dateText,tandaTangan,logoSekolah,logoKabupaten);
   const pages=paginateSurat(blocks);
-  {
-    const noBku=clean(d.bukti||'')||'-';
-    const allPages=[...pages.querySelectorAll('.surat-page')];
-    allPages.forEach((pg,i)=>{
-      // Footer sengaja hanya memuat nomor halaman. Identitas BKU tidak diulang di footer.
-      pg.querySelector('.surat-page-footer').innerHTML=`<span class="sf-page">Halaman ${i+1} dari ${allPages.length}</span>`;
-    });
-    // Kotak BNU/BPU hanya boleh muncul dan tercetak pada halaman pertama.
-    const firstPage=allPages[0];
-    if(firstPage){
-      const box=document.createElement('div');
-      box.className='surat-bku-box';
-      box.textContent=noBku;
-      firstPage.appendChild(box);
-    }
-  }
+  decorateSuratPages(pages,clean(d.bukti||'')||'-');
 
   $('suratPreview').innerHTML='';
   $('suratPreview').appendChild(pages);
@@ -446,6 +553,7 @@ function renderSurat(){
 
 Object.assign(ns,{
   dateToInput,dateDisplay,suratRow,enableSuratSection,disableSuratSection,rawRowsForSurat,suratUraianText,moneyWords,roman,suratData,syncSurat,readSuratFields,updateSuratNextInfo,nextSurat,prevSurat,fillSurat,
-  normalizeSchoolName,addressWithKecamatan,splitUraianItems,renderUraianHtml,suratBlock,buildSuratBlocks,createSuratPage,paginateSurat,renderSurat
+  normalizeSchoolName,addressWithKecamatan,splitUraianItems,renderUraianHtml,suratBlock,buildSuratBlocks,createSuratPage,paginateSurat,renderSurat,
+  suratDraftKey,getSuratDraft,captureCurrentSuratDraft,restoreSuratDraft,updateSuratDraftStatus,saveCurrentSuratData,suratDataForIndex,decorateSuratPages,buildSuratPagesForIndex,suratDraftReady
 });
 })(window.SPMU=window.SPMU||{});

@@ -105,6 +105,7 @@ async function extractBkuData(){
     }
     syncSurat();
     enableSuratSection();
+    ns.scheduleProjectAutoSave?.();
     const identityReady=!!(state.identity.school&&state.identity.headName&&state.identity.headNip&&state.identity.treasurerName&&state.identity.treasurerNip);
     await mrLoadingSuccess(`${state.rows.length} transaksi terbaca${identityReady?' • identitas sekolah, Kepala Sekolah, dan Bendahara ikut terbaca otomatis.':'.'}`);
   }catch(e){

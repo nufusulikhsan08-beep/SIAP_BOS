@@ -126,3 +126,15 @@ UPDATE v20 — HOTFIX DUA ReferenceError (BACA DATA & CETAK/PDF)
   Perbaikan: pemanggilan diubah menjadi ns.renderSurat() di js/surat-viewer.js.
 - Tidak ada perubahan pada logika ekstraksi, penggabungan BPU/BNU, data murni, hitung pajak, renderer/pagination Surat Perintah,
   navigasi transaksi, footer, kotak BNU/BPU, logo, maupun ekspor Excel. Hanya dua baris kode yang diubah.
+
+
+UPDATE v21 — FITUR KWITANSI (otomatis mengikuti No. Bukti)
+- Tombol "Kwitansi" ditambahkan di samping tombol "Surat" pada pratinjau Tab Surat Perintah.
+- Kwitansi otomatis mengikuti transaksi/No. Bukti yang sedang dipilih (dropdown, tombol Sebelumnya/Berikutnya).
+- Isi kwitansi: Nomor = <No. Bukti>/BOS/<Tahun>; Sudah Terima Dari = KEPALA <Nama Sekolah>;
+  Banyaknya Uang = terbilang dalam huruf; Untuk Pembayaran = isian manual Surat Perintah
+  (jika kosong memakai uraian BKU); kotak Terbilang: Rp ...,-; tanda tangan Kepala Sekolah,
+  Bendahara, dan Yang Menerima Uang (nama dari "Harap Dibayar Kepada").
+- Cetak / PDF mengikuti dokumen yang sedang tampil (Surat atau Kwitansi), A4 portrait.
+- Cetak / PDF Massal: pilihan dokumen "Surat Perintah", "Kwitansi", atau "Surat + Kwitansi".
+- File baru: js/kwitansi.js. Perubahan kecil: index.html, main.js, surat.js, surat-viewer.js, styles.css.

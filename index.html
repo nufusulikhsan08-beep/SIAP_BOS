@@ -22,7 +22,7 @@
 <button id="tabSuratBtn" class="tab-btn locked" type="button" role="tab" aria-selected="false" disabled>2. SURAT PERINTAH 🔒</button><button id="tabPajakBtn" class="tab-btn locked" type="button" role="tab" aria-selected="false" disabled>3. HITUNG PAJAK 🔒</button>
 </div>
 <div id="tabBku" class="tab-panel active bku-group" role="tabpanel">
-<section class="card"><div class="upload-head"><div class="upload-icon">⇧</div><div><div class="section-title">Impor dokumen BKU</div><div class="section-sub">Pilih berkas sumber untuk mulai mengekstrak transaksi.</div></div></div><div class="controls"><input id="fileInput" type="file" accept=".pdf,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"><button id="readBtn" class="btn primary" disabled>◈ &nbsp; BACA DATA</button><button id="exportBtn" class="btn success" disabled>⇩ &nbsp; EXPORT EXCEL</button><button id="clearBtn" class="btn secondary">↺ &nbsp; RESET</button></div><div class="hint" style="margin-top:12px">Format didukung: PDF, XLSX, dan XLS. <b>Hanya BKU Kecamatan Lebak Wangi</b> yang diterima. Baris dengan Pengeluaran &gt; 0 akan diproses, kecuali Tarik Tunai yang merupakan pemindahan dana internal.</div></section>
+<section class="card"><div class="upload-head"><div class="upload-icon">⇧</div><div><div class="section-title">Impor dokumen BKU</div><div class="section-sub">Pilih berkas sumber untuk mulai mengekstrak transaksi.</div></div></div><div class="controls"><input id="fileInput" type="file" accept=".pdf,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"><button id="readBtn" class="btn primary" disabled>◈ &nbsp; BACA DATA</button><button id="saveProjectBtn" class="btn project-save-btn" type="button">💾 &nbsp; SIMPAN PEKERJAAN</button><button id="openProjectBtn" class="btn project-open-trigger" type="button">📂 &nbsp; BUKA PEKERJAAN</button><button id="exportBtn" class="btn success" disabled>⇩ &nbsp; EXPORT EXCEL</button><button id="clearBtn" class="btn secondary">↺ &nbsp; RESET</button></div><div class="project-save-row"><span id="projectSaveName">Belum ada pekerjaan tersimpan.</span><span id="projectSaveStatus" class="project-save-status">Penyimpanan lokal siap digunakan.</span></div><div class="hint" style="margin-top:12px">Format didukung: PDF, XLSX, dan XLS. <b>Hanya BKU Kecamatan Lebak Wangi</b> yang diterima. Baris dengan Pengeluaran &gt; 0 akan diproses, kecuali Tarik Tunai yang merupakan pemindahan dana internal.</div></section>
 <section class="card"><div class="toolbar" style="margin-bottom:13px"><div><div class="section-title">Ringkasan ekstraksi</div><div class="section-sub">Statistik akan diperbarui setelah dokumen dibaca.</div></div><span class="state-chip">● SIAP DIGUNAKAN</span></div><div class="grid"><div class="metric"><span>Dokumen</span><b id="mFile">—</b></div><div class="metric"><span>Halaman / Sheet</span><b id="mPages">0</b></div><div class="metric"><span>Transaksi keluar</span><b id="mRows">0</b></div><div class="metric"><span>Total pengeluaran</span><b id="mTotal">0</b></div><div class="metric"><span>Pemasukan diabaikan</span><b id="mIncome">0</b></div></div></section>
 <section class="card"><div class="toolbar"><div><div class="section-title">Pusat status & validasi</div><div class="section-sub">Informasi proses pembacaan dan peringatan hasil ekstraksi.</div></div><div class="small" id="sourceInfo">Belum ada file dibaca.</div></div><div id="status" class="status" style="margin-top:12px">Siap. Pilih dokumen lalu tekan BACA DATA.</div><div id="warnings"></div></section>
 <section class="card"><div class="toolbar"><div><div class="section-title">Versi 1 — Rincian Transaksi Pengeluaran (BPU/BNU Digabung)</div><div class="section-sub">Tetap menggunakan hasil penggabungan BPU/BNU seperti fitur lama. Periksa tanggal, nomor bukti, uraian, dan nominal sebelum ekspor.</div></div><input id="searchRows" class="search" type="search" placeholder="⌕  Cari uraian / nomor bukti..." aria-label="Cari transaksi"></div><div class="table-wrap result-table-wrap" style="margin-top:14px"><table class="data-table"><thead><tr><th>No</th><th>Tanggal</th><th>No. Bukti</th><th>Uraian</th><th class="num">Pengeluaran (Rp)</th></tr></thead><tbody id="tbody"><tr><td colspan="5" class="empty">Belum ada data. Impor dokumen untuk memulai.</td></tr></tbody></table></div><div class="hint" style="margin-top:11px">Catatan: data ditampilkan dalam kontainer yang dapat digulir supaya halaman aplikasi tetap ringkas. Uraian mengikuti teks sumber. BPU/BNU boleh kosong untuk transaksi PDF tertentu seperti Setor PPh/PPN dan Setor SIPLah.</div></section>
@@ -62,6 +62,7 @@
 <div class="sv-fields">
 <div class="field"><label>Harap Dibayar Kepada</label><input id="suratKepada" placeholder="Nama penerima/pihak yang dibayar"></div>
 <div class="field"><label>Untuk Pembayaran <span class="manual-tag">INPUT MANUAL</span></label><textarea id="suratUntukPembayaran" placeholder="Tulis tujuan pembayaran secara manual sesuai kebutuhan surat perintah"></textarea></div>
+<div class="surat-draft-savebar"><div><b>Data SPMU per No. Bukti</b><div id="suratDraftSaveStatus" class="surat-draft-save-status">Belum ada data tersimpan untuk No. Bukti ini.</div></div><button id="suratSaveDataBtn" type="button" class="btn surat-save-data-btn">💾 Simpan Data SPMU</button></div>
 <div class="field"><label>Uraian <span class="auto-tag">VERSI 2 • DATA MURNI</span></label><textarea id="suratUraian" readonly placeholder="Uraian transaksi akan diambil dari data murni BKU"></textarea><div class="small">Di surat, uraian dirender sebagai kolom <b>No | Nama Barang / Kegiatan | Harga</b> dari data murni (tidak digabung).</div></div>
 </div>
 </section>
@@ -75,7 +76,7 @@
 <div class="field"><label>Logo Kabupaten Serang <span class="auto-tag">PNG BAWAAN</span></label><div class="logo-kabupaten-status"><img src="assets/logo_kabupaten_serang.png" alt="Logo Kabupaten Serang"><div><b>Logo Kabupaten Serang</b><div class="small">Dipakai otomatis di sisi kiri kop surat.</div></div></div></div>
 <div class="field"><label>Tanda Tangan Kepala Sekolah</label><input id="suratTandaTangan" type="file" accept="image/png,image/jpeg,image/jpg,image/webp"><div class="small">Upload PNG/JPG/WebP. Jika tidak diunggah, tanda tangan dari template S Perintah tetap digunakan.</div></div>
 </div>
-<div class="surat-note">Surat dikunci ke <b>A4 portrait (210 × 297 mm)</b>. <b>Untuk Pembayaran</b> diisi manual; <b>Uraian</b> dibaca otomatis dari BKU dan ditampilkan bernomor berurutan.</div>
+<div class="surat-note">Surat dikunci ke <b>A4 portrait (210 × 297 mm)</b>. <b>Harap Dibayar Kepada</b> dan <b>Untuk Pembayaran</b> disimpan <b>terpisah untuk setiap No. Bukti</b>; pilih No. Bukti lain untuk mengisi data yang berbeda. <b>Uraian</b> dibaca otomatis dari BKU.</div>
 </section>
 </aside>
 
@@ -83,12 +84,13 @@
 <main class="sv-right">
 <section class="sv-card sv-viewer-card">
 <div class="sv-head">
-<h3 class="sv-card-title" style="margin:0">Surat Perintah hasil pratinjau</h3>
+<h3 id="svDocTitle" class="sv-card-title" style="margin:0">Surat Perintah hasil pratinjau</h3>
 <div class="sv-pills surat-actions">
 <button id="suratPreviewBtn" type="button" class="sv-pill sv-pill-active" disabled>Surat</button>
+<button id="kwitansiPreviewBtn" type="button" class="sv-pill" disabled>Kwitansi</button>
 <button type="button" id="suratPrevBtn" class="sv-pill" disabled>◀ Sebelumnya</button>
 <button type="button" id="suratNextBtn" class="sv-pill" disabled>Berikutnya ▶</button>
-<button id="suratPrintBtn" type="button" class="sv-pill" disabled>Cetak / PDF</button>
+<button id="suratPrintBtn" type="button" class="sv-pill" disabled>Cetak / PDF</button><button id="suratBatchPrintBtn" type="button" class="sv-pill sv-pill-batch" disabled>🖨 Cetak / PDF Massal</button>
 </div>
 </div>
 <div class="sv-toolbar">
@@ -135,6 +137,39 @@
 </section>
 </div>
 <div class="footer">APLIKASI PENGELOLAAN BKU, SURAT PERINTAH &amp; HITUNG PAJAK • Dibuat oleh <b>MR. LOADING</b></div></div>
+
+<div id="projectModal" class="project-modal" aria-hidden="true">
+  <div class="project-modal-card" role="dialog" aria-modal="true" aria-labelledby="projectModalTitle">
+    <div class="project-modal-head"><div><div id="projectModalTitle" class="project-modal-title">Pekerjaan Tersimpan</div><div id="projectModalSubtitle" class="project-modal-subtitle">Data disimpan hanya pada browser/perangkat ini.</div></div><button id="projectModalClose" class="project-modal-close" type="button" aria-label="Tutup">×</button></div>
+    <div id="projectSaveBox" class="project-save-box" style="display:none"><label for="projectNameInput">Nama pekerjaan</label><div class="project-save-input-row"><input id="projectNameInput" class="project-name-input" type="text" maxlength="120" placeholder="Contoh: BKU SD Negeri Krian September 2026"><button id="projectConfirmSaveBtn" class="btn primary" type="button">Simpan</button></div><div class="small">File BKU dan seluruh hasil kerja akan ikut disimpan.</div></div>
+    <div id="projectList" class="project-list"><div class="project-empty">Memuat pekerjaan tersimpan…</div></div>
+    <div class="project-modal-foot"><span class="small">Pekerjaan disimpan di browser. <b>Cadangan .SPMU</b> dapat diunduh dan dibuka kembali kapan saja.</span><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="projectImportInput" type="file" accept=".spmu,application/json" style="display:none"><button id="projectImportBtn" class="btn secondary" type="button">↥ Impor .SPMU</button><button id="projectCancelBtn" class="btn secondary" type="button">Tutup</button></div></div>
+  </div>
+</div>
+<div id="batchPrintModal" class="batch-print-modal" aria-hidden="true" style="display:none">
+  <div class="batch-print-card" role="dialog" aria-modal="true" aria-labelledby="batchPrintTitle">
+    <div class="batch-print-head">
+      <div><div id="batchPrintTitle" class="batch-print-title">Cetak / Simpan PDF Massal</div><div class="batch-print-subtitle">Pilih BPU/BNU yang sudah tersimpan lengkap. Semua surat terpilih akan masuk dalam satu proses cetak / Save as PDF.</div></div>
+      <button id="batchPrintCancel" class="project-modal-close" type="button" aria-label="Tutup">×</button>
+    </div>
+    <div class="batch-filter-row batch-doc-row"><b>Dokumen:</b><label><input type="radio" name="batchDocType" value="surat" checked> Surat Perintah</label><label><input type="radio" name="batchDocType" value="kwitansi"> Kwitansi</label><label><input type="radio" name="batchDocType" value="both"> Surat + Kwitansi</label></div>
+    <div class="batch-filter-row">
+      <button id="batchFilterAll" type="button" class="btn secondary batch-filter active">Semua</button>
+      <button id="batchFilterBpu" type="button" class="btn secondary batch-filter">BPU</button>
+      <button id="batchFilterBnu" type="button" class="btn secondary batch-filter">BNU</button>
+      <button id="batchSelectAll" type="button" class="btn secondary">Pilih Semua Siap</button>
+      <button id="batchClearAll" type="button" class="btn secondary">Hapus Pilihan</button>
+      <span id="batchPrintCount" class="batch-count">0 dipilih</span>
+    </div>
+    <div id="batchPrintHint" class="batch-print-hint">Pilih hanya surat dengan status “Lengkap & tersimpan”.</div>
+    <div id="batchPrintList" class="batch-print-list"><div class="batch-empty">Memuat daftar surat…</div></div>
+    <div class="batch-print-foot">
+      <span class="small">Catatan: klik <b>Cetak / PDF Massal</b>, lalu pada dialog printer pilih printer biasa atau <b>Save as PDF</b> untuk menyimpan semua surat sekaligus.</span>
+      <div class="batch-foot-actions"><button id="batchPrintAction" type="button" class="btn primary" disabled>🖨 Cetak / Simpan PDF Terpilih</button><button id="batchPrintCancel2" type="button" class="btn secondary">Tutup</button></div>
+    </div>
+  </div>
+</div>
+
 <div id="mrLoadingOverlay" class="mr-loading-overlay" aria-hidden="true">
 <div class="mr-loading-card">
   <div id="mrLoadingAvatar" class="mr-loading-avatar" aria-live="polite"><div class="mr-spinner"></div><div class="mr-face">👨‍💼</div></div>
@@ -149,9 +184,11 @@
 <script src="js/core.js"></script>
 <script src="js/bku-parser.js"></script>
 <script src="js/surat.js"></script>
+<script src="js/kwitansi.js"></script>
 <script src="js/bku-ui.js"></script>
 <script src="js/surat-viewer.js"></script>
 <script src="js/export.js"></script>
+<script src="js/project-store.js"></script>
 <script src="js/main.js"></script>
 
 </body></html>

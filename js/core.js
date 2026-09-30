@@ -5,7 +5,8 @@ const $ = id => document.getElementById(id);
 const state = {
   file:null, rows:[], rawRows:[], result:null, search:"",
   identity:{school:"",kecamatan:"",alamat:"",npsn:"",headName:"",headNip:"",treasurerName:"",treasurerNip:"",kabupaten:"",provinsi:""},
-  surat:{rowIndex:-1,bukti:"",nomor:"SD.123",tanggal:"",sd:"",kecamatan:"",alamat:"",email:"sdnkrian20604911@gmail.com",npsn:"",nss:"101280409030",bendahara:"",nipBendahara:"",kepada:"",uraian:"",untukPembayaran:"",kepala:"",nipKepala:"",tandaTangan:"",logoSekolah:"",logoKabupaten:"assets/logo_kabupaten_serang.png"}
+  surat:{rowIndex:-1,bukti:"",nomor:"SD.123",tanggal:"",sd:"",kecamatan:"",alamat:"",email:"sdnkrian20604911@gmail.com",npsn:"",nss:"101280409030",bendahara:"",nipBendahara:"",kepada:"",uraian:"",untukPembayaran:"",kepala:"",nipKepala:"",tandaTangan:"",logoSekolah:"",logoKabupaten:"assets/logo_kabupaten_serang.png"},
+  suratByBukti:{}
 };
 if(window.pdfjsLib){ window.pdfjsLib.GlobalWorkerOptions.workerSrc=''; }
 

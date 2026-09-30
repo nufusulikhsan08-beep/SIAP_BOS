@@ -109,16 +109,125 @@ function printSurat(){
     .surat-uraian-table tfoot td:last-child{text-align:right}
     .sign{width:62mm;margin:14mm 0 0 auto;text-align:center;font-size:11pt;line-height:1.25}
     .sign img{width:48mm;height:27mm;object-fit:contain;display:block;margin:1mm auto -1mm}.sign .name{font-weight:700;text-decoration:underline}
-  `;
+  `+(ns.KWITANSI_PRINT_CSS||'');
   const clone=pages.cloneNode(true);
   clone.querySelectorAll('img').forEach(img=>{
     const src=img.getAttribute('src');
     if(src){try{img.setAttribute('src',new URL(src,location.href).href);}catch(_){}}
   });
   const childScript='<scr'+'ipt>window.addEventListener("load",()=>setTimeout(()=>window.print(),180));window.addEventListener("afterprint",()=>setTimeout(()=>window.close(),120));</scr'+'ipt>';
-  const doc=`<!doctype html><html><head><meta charset="utf-8"><title>Surat Perintah</title><style>${styles}</style></head><body>${clone.outerHTML}${childScript}</body></html>`;
+  const doc=`<!doctype html><html><head><meta charset="utf-8"><title>${state.docMode==='kwitansi'?'Kwitansi':'Surat Perintah'}</title><style>${styles}</style></head><body>${clone.outerHTML}${childScript}</body></html>`;
   win.document.open();win.document.write(doc);win.document.close();
 }
 
-Object.assign(ns,{sv,svApply,suratViewerUpdate,svGo,svZoom,printSurat});
+
+function openBatchPrintDialog(){
+  if(!state.rows.length)return;
+  try{ns.readSuratFields();ns.captureCurrentSuratDraft?.();}catch(_){ }
+  const modal=$('batchPrintModal');
+  if(!modal)return;
+  const list=$('batchPrintList');
+  const count=$('batchPrintCount');
+  const action=$('batchPrintAction');
+  const onlyBpu=$('batchFilterBpu'),onlyBnu=$('batchFilterBnu');
+  let filter='ALL';
+  const render=()=>{
+    const items=state.rows.map((r,i)=>({r,i})).filter(({r})=>{
+      if(filter==='ALL')return true;
+      return cleanBatchType(r?.noBukti)===filter;
+    });
+    if(!items.length){list.innerHTML='<div class="batch-empty">Tidak ada No. Bukti sesuai filter.</div>';count.textContent='0 dipilih';if(action)action.disabled=true;return;}
+    list.innerHTML=items.map(({r,i})=>{
+      const draft=ns.getSuratDraft?.(i);
+      const ready=ns.suratDraftReady?.(i);
+      const label=ready?'Lengkap & tersimpan':(draft?'Belum lengkap':'Belum disimpan');
+      const cls=ready?'ready':'not-ready';
+      return `<label class="batch-item ${cls}"><input type="checkbox" class="batch-check" value="${i}" ${ready?'checked':''}><span class="batch-main"><b>${escBatch(r.noBukti||'Tanpa No. Bukti')}</b><span>${escBatch(r.tanggal||'')} • ${escBatch(String(r.uraian||'').slice(0,120))}</span></span><span class="batch-status">${label}</span></label>`;
+    }).join('');
+    sync();
+  };
+  const sync=()=>{
+    const checks=[...list.querySelectorAll('.batch-check')];
+    const selected=checks.filter(c=>c.checked).map(c=>Number(c.value));
+    const invalid=selected.some(i=>!ns.suratDraftReady?.(i));
+    count.textContent=`${selected.length} dipilih`;
+    if(action)action.disabled=!selected.length||invalid;
+    const reason=$('batchPrintHint');
+    if(reason)reason.textContent=invalid?'Pilih hanya surat dengan status “Lengkap & tersimpan”.':'Semua surat yang dipilih siap dicetak / disimpan sebagai PDF.';
+  };
+  list.onclick=e=>{if(e.target?.classList?.contains('batch-check'))sync();};
+  $('batchSelectAll').onclick=()=>{list.querySelectorAll('.batch-check').forEach(c=>c.checked=ns.suratDraftReady?.(Number(c.value)));sync();};
+  $('batchClearAll').onclick=()=>{list.querySelectorAll('.batch-check').forEach(c=>c.checked=false);sync();};
+  $('batchFilterAll').onclick=()=>{filter='ALL';setBatchFilterButtons();render();};
+  $('batchFilterBpu').onclick=()=>{filter='BPU';setBatchFilterButtons();render();};
+  $('batchFilterBnu').onclick=()=>{filter='BNU';setBatchFilterButtons();render();};
+  $('batchPrintCancel').onclick=()=>{modal.style.display='none';modal.setAttribute('aria-hidden','true');};
+  $('batchPrintAction').onclick=()=>{
+    const selected=[...list.querySelectorAll('.batch-check:checked')].map(c=>Number(c.value));
+    if(!selected.length||selected.some(i=>!ns.suratDraftReady?.(i)))return;
+    printBatchSurat(selected,document.querySelector('input[name="batchDocType"]:checked')?.value||'surat');
+  };
+  function setBatchFilterButtons(){
+    for(const [id,val] of [['batchFilterAll','ALL'],['batchFilterBpu','BPU'],['batchFilterBnu','BNU']])$(id)?.classList.toggle('active',filter===val);
+  }
+  list.onchange=sync;
+  list.ondblclick=undefined;
+  modal.style.display='flex';modal.setAttribute('aria-hidden','false');
+  setBatchFilterButtons();render();
+}
+function cleanBatchType(v){
+  const m=String(v||'').trim().toUpperCase().match(/^(BPU|BNU)/);
+  return m?m[1]:'';
+}
+function escBatch(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function printBatchSurat(indices,docType='surat'){
+  if(!Array.isArray(indices)||!indices.length)return;
+  const master=document.createElement('div');master.className='surat-pages';
+  const added=[];
+  for(const idx of indices){
+    if(!ns.suratDraftReady?.(idx))continue;
+    const sets=[];
+    if(docType!=='kwitansi')sets.push(ns.buildSuratPagesForIndex?.(idx));
+    if(docType!=='surat')sets.push(ns.buildKwitansiPagesForIndex?.(idx));
+    for(const pages of sets){
+      if(!pages)continue;
+      [...pages.querySelectorAll('.surat-page')].forEach(pg=>{master.appendChild(pg.cloneNode(true));added.push(idx);});
+      if(pages.parentNode)pages.parentNode.removeChild(pages);
+    }
+  }
+  if(!added.length){window.alert('Tidak ada surat yang lengkap dan tersimpan untuk dicetak.');return;}
+  const win=window.open('','_blank','width=900,height=1100');
+  if(!win){$('status').textContent='Popup diblokir browser. Izinkan popup untuk cetak / simpan PDF massal.';return;}
+  const styles=`
+    @page{size:A4 portrait;margin:0}
+    html,body{margin:0;padding:0;background:#fff}
+    body{font-family:"Times New Roman",Times,serif;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .surat-pages{display:block}
+    .surat-page{position:relative;width:210mm;height:297mm;min-height:297mm;box-sizing:border-box;margin:0;padding:11mm 15mm 17mm;background:#fff;overflow:hidden;break-after:page;page-break-after:always}
+    .surat-page:last-child{break-after:auto;page-break-after:auto}
+    .surat-page-content{height:269mm;overflow:hidden}
+    .surat-page-footer{position:absolute;left:15mm;right:15mm;bottom:5mm;height:7mm;display:flex;align-items:center;justify-content:center;border-top:1px solid #aaa;padding-top:1.5mm;box-sizing:border-box;font-size:9pt;font-style:italic;line-height:1}
+    .surat-page-footer .sf-page{white-space:nowrap}
+    .surat-bku-box{position:absolute;top:4mm;right:7mm;width:22mm;min-width:22mm;height:6mm;padding:0 2mm;box-sizing:border-box;border:1.25px solid #000;display:flex;align-items:center;justify-content:center;font-size:9pt;font-weight:700;color:#000;background:#fff;z-index:10}
+    .page-block{break-inside:avoid;page-break-inside:avoid}
+    .uraian-table-block{break-inside:auto;page-break-inside:auto}
+    .surat-uraian-table{break-inside:auto;page-break-inside:auto}
+    .kop{position:relative;min-height:27mm;padding:0 21mm 3mm;text-align:center;border-bottom:3px double #000;box-sizing:border-box}
+    .surat-page .kop .kop-logo{position:absolute;top:0;width:18mm;height:18mm;object-fit:contain;display:block}.surat-page .kop .kop-logo-kabupaten{left:0!important;right:auto!important}.surat-page .kop .kop-logo-sekolah{right:0!important;left:auto!important}
+    .kop .prov{font-size:16pt;font-weight:700;line-height:1.15}.kop .school{font-size:18pt;font-weight:700;line-height:1.15;margin-top:2px;text-transform:uppercase}.kop .kab{font-size:12pt;font-weight:700;line-height:1.15}.kop .addr,.kop .mail{font-size:9pt;line-height:1.35}
+    h2{text-align:center;font-size:15pt;line-height:1.2;margin:7mm 0 1.5mm;text-decoration:underline}.nomor{text-align:center;font-size:11pt;line-height:1.2;margin-bottom:8mm}.surat-page p{font-size:11pt;line-height:1.45;margin:4mm 0}
+    .identity .line{display:grid;grid-template-columns:42mm 5mm minmax(0,1fr);margin:2.5mm 0;font-size:11pt;line-height:1.35}.identity .line>.colon{text-align:center}
+    .payment{margin:0}.payment .row{display:grid;grid-template-columns:52mm 5mm minmax(0,1fr);column-gap:1.5mm;margin:2.6mm 0;font-size:11pt;line-height:1.4;align-items:start}.payment .row>b,.payment .row>.colon{white-space:nowrap}.payment .row>.colon{text-align:center}.payment .row>span:last-child,.payment .row>div:last-child{min-width:0;overflow-wrap:anywhere;word-break:break-word;white-space:pre-wrap}.payment-heading{margin:5mm 0 2.5mm!important}.amount{font-weight:700;white-space:nowrap}.terbilang{text-transform:capitalize;font-style:italic}
+    .uraian-heading-block{margin-top:1mm}.surat-uraian-table-wrap{display:block!important;visibility:visible!important;opacity:1!important;margin-left:58.5mm;margin-top:1mm;max-width:calc(100% - 58.5mm);width:calc(100% - 58.5mm);overflow:visible!important}.surat-uraian-table{display:table!important;visibility:visible!important;opacity:1!important;width:100%;border-collapse:collapse;table-layout:fixed;font-size:10.5pt;color:#000!important}.surat-uraian-table th,.surat-uraian-table td{border:1px solid #000!important;padding:1.7mm 2mm;vertical-align:top;line-height:1.3;color:#000!important;background:#fff!important}.surat-uraian-table thead{display:table-header-group!important}.surat-uraian-table tbody{display:table-row-group!important}.surat-uraian-table tr{display:table-row!important;break-inside:avoid;page-break-inside:avoid}.surat-uraian-table th{font-weight:700;text-align:center}.surat-uraian-table th:first-child,.surat-uraian-table td:first-child{width:11mm;text-align:center}.surat-uraian-table th:last-child,.surat-uraian-table td:last-child{width:34mm;text-align:right;white-space:nowrap}.surat-uraian-table td:nth-child(2){text-align:left;overflow-wrap:anywhere;word-break:break-word;white-space:normal}.surat-uraian-table tfoot{display:table-footer-group!important}.surat-uraian-table tfoot td{font-weight:700}.surat-uraian-table tfoot td:last-child{text-align:right}
+    .sign{width:62mm;margin:14mm 0 0 auto;text-align:center;font-size:11pt;line-height:1.25}.sign img{width:48mm;height:27mm;object-fit:contain;display:block;margin:1mm auto -1mm}.sign .name{font-weight:700;text-decoration:underline}
+  `+(ns.KWITANSI_PRINT_CSS||'');
+  const clone=master.cloneNode(true);
+  clone.querySelectorAll('img').forEach(img=>{const src=img.getAttribute('src');if(src){try{img.setAttribute('src',new URL(src,location.href).href);}catch(_){}}});
+  const childScript='<scr'+'ipt>window.addEventListener("load",()=>setTimeout(()=>window.print(),180));window.addEventListener("afterprint",()=>setTimeout(()=>window.close(),120));</scr'+'ipt>';
+  const doc=`<!doctype html><html><head><meta charset="utf-8"><title>${docType==='kwitansi'?'Kwitansi Massal':docType==='both'?'SPMU + Kwitansi Massal':'SPMU Massal'}</title><style>${styles}</style></head><body>${clone.outerHTML}${childScript}</body></html>`;
+  win.document.open();win.document.write(doc);win.document.close();
+  $('batchPrintModal').style.display='none';$('batchPrintModal').setAttribute('aria-hidden','true');
+}
+
+Object.assign(ns,{sv,svApply,suratViewerUpdate,svGo,svZoom,printSurat,openBatchPrintDialog,printBatchSurat});
 })(window.SPMU=window.SPMU||{});

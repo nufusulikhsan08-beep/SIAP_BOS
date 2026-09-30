@@ -336,7 +336,89 @@
 @media(max-width:1100px){#tabSurat .sv-layout{grid-template-columns:1fr}#tabSurat .sv-right{position:static;order:-1}#tabSurat .sv-stage{height:min(70vh,760px)}}
 @media(max-width:650px){#tabSurat .sv-card{padding:16px;border-radius:14px}#tabSurat .sv-stage #suratPreview{padding:12px}}
 
-${styles}
-
 /* Small layout refinements moved out of index.html */
 .hint-top{margin-top:12px}.summary-toolbar{margin-bottom:13px}.table-top{margin-top:14px}.raw-table-top{margin-top:14px}
+
+
+#tabSurat .surat-draft-savebar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:2px;padding:12px 13px;border:1px solid #dce8f2;border-radius:13px;background:linear-gradient(180deg,#fbfdff,#f6faff)}
+#tabSurat .surat-draft-savebar>div{min-width:0}
+#tabSurat .surat-draft-savebar b{display:block;font-size:11.5px;color:#29405f}
+#tabSurat .surat-draft-save-status{margin-top:4px;font-size:10.5px;line-height:1.45;color:#8a96a8}
+#tabSurat .surat-draft-save-status.ok{color:#08784a;font-weight:700}
+#tabSurat .surat-draft-save-status.error{color:#a42d2d;font-weight:700}
+#tabSurat .surat-save-data-btn{flex:0 0 auto;background:linear-gradient(135deg,#0f7a5b,#158f6b);color:#fff;border-color:#0f7a5b;padding:9px 13px;font-size:11.5px;font-weight:800}
+@media(max-width:650px){#tabSurat .surat-draft-savebar{align-items:stretch;flex-direction:column}#tabSurat .surat-save-data-btn{width:100%}}
+
+/* ==========================================================
+   PEKERJAAN BKU — SIMPAN / BUKA LOKAL
+   ========================================================== */
+.project-save-btn{background:linear-gradient(135deg,#0f7a5b,#158f6b);color:#fff;box-shadow:0 7px 18px #0f7a5b22}
+.project-open-trigger{background:#eef3ff;color:#294ca4;border-color:#d6e1ff}
+.project-save-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:11px;font-size:12px;color:#70809b}
+.project-save-row>span:first-child{font-weight:800;color:#364766}
+.project-save-status{padding:5px 9px;border-radius:999px;background:#f1f4f9;color:#75839a;font-weight:700}
+.project-save-status.ok{background:#e8f8ef;color:#08784a}
+.project-save-status.dirty{background:#fff7e5;color:#8b5a00}
+.project-save-status.error{background:#fff0ef;color:#a42d2d}
+.project-save-status.warn{background:#fff7e5;color:#8b5a00}
+.project-modal{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(9,18,42,.58);backdrop-filter:blur(7px)}
+.project-modal.show{display:flex;animation:projectFadeIn .16s ease-out}
+.project-modal-card{width:min(760px,96vw);max-height:min(760px,92vh);overflow:hidden;display:flex;flex-direction:column;background:#fff;border:1px solid #d9e3f4;border-radius:22px;box-shadow:0 28px 80px rgba(16,29,67,.28)}
+.project-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:20px 22px 16px;border-bottom:1px solid #e7edf7;background:linear-gradient(180deg,#fbfcff,#f6f8fd)}
+.project-modal-title{font-size:19px;font-weight:900;color:#223253}
+.project-modal-subtitle{margin-top:5px;font-size:12px;line-height:1.5;color:#7987a0}
+.project-modal-close{width:36px;height:36px;border:1px solid #dce4f1;border-radius:11px;background:#fff;color:#5f6d87;font-size:25px;line-height:1;cursor:pointer}
+.project-save-box{padding:16px 22px;border-bottom:1px solid #e8edf5;background:#fbfcff}
+.project-save-box label{display:block;font-size:12px;font-weight:850;color:#3a4968;margin-bottom:7px}
+.project-save-input-row{display:flex;gap:9px;align-items:center}
+.project-name-input{flex:1;min-width:0;border:1px solid #d8e1ef;background:#fff;border-radius:12px;padding:12px 13px;font-size:14px;color:#203252;outline:none}
+.project-name-input:focus{border-color:#7891ed;box-shadow:0 0 0 3px #718cf022}
+.project-list{padding:14px 18px;overflow:auto;min-height:120px}
+.project-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 12px;border:1px solid #e3e9f3;border-radius:15px;background:#fff;margin-bottom:9px}
+.project-item.active{border-color:#aac0ff;background:#f7f9ff;box-shadow:0 4px 16px rgba(49,89,217,.06)}
+.project-main{min-width:0;display:flex;flex-direction:column;gap:4px}
+.project-main b{font-size:13px;color:#293a5c;overflow-wrap:anywhere}
+.project-main span{font-size:11px;color:#8692a8;line-height:1.45;overflow-wrap:anywhere}
+.project-actions{display:flex;gap:7px;flex:0 0 auto}
+.project-open-btn{background:#edf3ff;color:#294ca4;border-color:#d8e3ff;padding:9px 12px;font-size:12px}
+.project-delete-btn{background:#fff0ef;color:#a42d2d;border-color:#ffd0cc;padding:9px 12px;font-size:12px}
+.project-download-btn{background:#eef9f3;color:#16734d;border-color:#cfe9dc;padding:9px 12px;font-size:12px}
+.project-empty{padding:36px 18px;text-align:center;border:1px dashed #d9e2ef;border-radius:15px;color:#8591a7;background:#fafcff;font-size:13px}
+.project-empty.error{color:#a42d2d;background:#fff5f4;border-color:#ffd0cc}
+.project-modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;border-top:1px solid #e8edf5;background:#fbfcff}
+@keyframes projectFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:650px){.project-save-input-row{flex-direction:column;align-items:stretch}.project-save-input-row .btn{width:100%}.project-item{align-items:stretch;flex-direction:column}.project-actions{width:100%}.project-actions .btn{flex:1}.project-modal-foot{align-items:stretch;flex-direction:column}.project-modal-foot .btn{width:100%}}
+
+
+/* ==========================================================
+   CETAK / PDF MASSAL
+   ========================================================== */
+.surat-actions{flex-wrap:wrap}
+.sv-pill-batch{font-weight:800}
+.batch-print-modal{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(13,24,44,.55);backdrop-filter:blur(4px)}
+.batch-print-card{width:min(980px,96vw);max-height:90vh;display:flex;flex-direction:column;background:#fff;border:1px solid #dbe3ef;border-radius:18px;box-shadow:0 24px 70px rgba(18,35,63,.22);overflow:hidden}
+.batch-print-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px;border-bottom:1px solid #edf1f6}
+.batch-print-title{font-size:18px;font-weight:900;color:#15243d}.batch-print-subtitle{margin-top:4px;color:#6a7790;font-size:12px;line-height:1.45}
+.batch-filter-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:14px 20px 8px}.batch-filter.active{font-weight:900;border-color:#6a86c7;background:#edf3ff;color:#284a98}.batch-count{margin-left:auto;font-weight:900;color:#35435a}
+.batch-print-hint{margin:0 20px 10px;padding:9px 11px;border-radius:10px;background:#f6f8fc;border:1px solid #e4e9f2;color:#66738b;font-size:12px}
+.batch-print-list{padding:0 20px 12px;overflow:auto;display:grid;gap:8px}
+.batch-item{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e1e7f0;border-radius:12px;background:#fff;cursor:pointer}.batch-item.ready{border-color:#cbe8d6;background:#fbfffc}.batch-item.not-ready{background:#fffafa}.batch-item input{width:18px;height:18px}.batch-main{min-width:0;display:flex;flex-direction:column;gap:3px}.batch-main b{font-size:13px;color:#17253f}.batch-main span{font-size:11px;color:#6d7a91;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.batch-status{font-size:11px;font-weight:900;white-space:nowrap}.batch-item.ready .batch-status{color:#13804b}.batch-item.not-ready .batch-status{color:#b34747}.batch-empty{padding:30px;text-align:center;color:#748199;border:1px dashed #ccd5e4;border-radius:12px}
+.batch-print-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px;border-top:1px solid #edf1f6;background:#fafbfd}.batch-foot-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:760px){.batch-print-card{width:100%;max-height:94vh}.batch-print-foot{flex-direction:column;align-items:stretch}.batch-foot-actions{justify-content:stretch}.batch-foot-actions .btn{flex:1}.batch-count{margin-left:0}.batch-item{grid-template-columns:24px minmax(0,1fr)}.batch-status{grid-column:2}}
+
+/* ===== KWITANSI ===== */
+.surat-page.kwitansi-page{font-family:Calibri,Carlito,"Segoe UI",Arial,sans-serif;font-size:11pt;line-height:1.35;padding:18mm 20mm 12mm}
+.kwitansi-page .kw-title{text-align:center;font-size:17pt;font-weight:700;font-style:italic;letter-spacing:.12em;margin:0 0 9mm}
+.kwitansi-page .kw-row{display:grid;grid-template-columns:44mm 5mm minmax(0,1fr);align-items:start;margin:0 0 2.6mm;font-size:11pt;line-height:1.4}
+.kwitansi-page .kw-row .kw-c{text-align:left}
+.kwitansi-page .kw-row .kw-v{min-width:0;overflow-wrap:anywhere;word-break:break-word;white-space:pre-wrap}
+.kwitansi-page .kw-row .kw-v.kw-bold{font-weight:700}
+.kwitansi-page .kw-row.kw-cont{margin-top:-1mm}
+.kwitansi-page .kw-box{display:inline-block;box-sizing:border-box;min-width:82mm;margin:9mm 0 0 3mm;padding:4.5mm 5mm;border:1px solid #000;border-right-width:2px;border-bottom-width:2px;font-style:italic;font-weight:700;font-size:12pt;white-space:nowrap}
+.kwitansi-page .kw-box .kw-box-sep{display:inline-block;margin-left:10mm}
+.kwitansi-page .kw-sign{display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:6mm;margin-top:12mm;text-align:center;font-size:11pt;line-height:1.3}
+.kwitansi-page .kw-sign .kw-space{height:24mm}
+.kwitansi-page .kw-sign .kw-name{font-weight:700;text-decoration:underline;min-height:1.3em;overflow-wrap:anywhere}
+.kwitansi-page .kw-sign .kw-nip{font-size:10pt;min-height:1.3em}
+
+.batch-doc-row{align-items:center;gap:14px}.batch-doc-row label{display:inline-flex;gap:5px;align-items:center;font-size:12.5px;cursor:pointer}
