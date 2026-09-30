@@ -70,7 +70,7 @@ function kwitansiHtml(k){
     row('Banyaknya Uang',esc(k.banyaknya),'kw-bold kw-italic')+
     row('Untuk Pembayaran',esc(k.untuk||'........................................................'))+
     `<div class="kw-row kw-cont"><span></span><span></span><span class="kw-v">Sebagaimana terlampir pada faktur</span></div>`+
-    `<div class="kw-box">Terbilang<span class="kw-box-sep">: Rp ${formatMoney(k.nominal)},-</span></div>`+
+    `<div class="kw-box">Total<span class="kw-box-sep">: Rp ${formatMoney(k.nominal)},-</span></div>`+
     `<div class="kw-sign">`+
       `<div><div>Mengetahui,</div><div>Kepala Sekolah</div><div class="kw-space">${ttd(k.ttdKepala,'Tanda tangan Kepala Sekolah')}</div><div class="kw-name">${esc(k.kepala)||'&nbsp;'}</div><div class="kw-nip">${nip(k.nipKepala)}</div></div>`+
       `<div><div>Lunas dibayar</div><div>Bendahara Sekolah,</div><div class="kw-space">${ttd(k.ttdBendahara,'Tanda tangan Bendahara')}</div><div class="kw-name">${esc(k.bendahara)||'&nbsp;'}</div><div class="kw-nip">${nip(k.nipBendahara)}</div></div>`+
