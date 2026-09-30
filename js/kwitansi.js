@@ -44,7 +44,7 @@ function kwitansiDataForIndex(index){
   const school=ns.normalizeSchoolName(d.sd||'');
   const untuk=clean(d.untukPembayaran||'')||clean(d.untukPembayaran||'');
   return {
-    nomor:`${noBukti||'-'}/BOS/${tahun||''}`.replace(/\/$/,''),
+    nomor:`${noBukti||'-'}/BOSP/${tahun||''}`.replace(/\/$/,''),
     dari:school?`Bendahara BOSP ${schoolCase(school)}`:'Bendahara BOSP',
     nominal:d.nominal||0,
     banyaknya:titleCase(ns.moneyWords(d.nominal)),
