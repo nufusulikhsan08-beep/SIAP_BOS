@@ -6,7 +6,8 @@ state.docMode=state.docMode||'surat';
 
 /* CSS kwitansi dipakai bersama oleh pratinjau (styles.css), Cetak/PDF, dan Cetak Massal. */
 const KWITANSI_PRINT_CSS=`
-.surat-page.kwitansi-page{font-family:Calibri,Carlito,"Segoe UI",Arial,sans-serif;font-size:11pt;line-height:1.35;padding:18mm 20mm 12mm}
+.surat-page.kwitansi-page{font-family:Calibri,Carlito,"Segoe UI",Arial,sans-serif;font-size:11pt;line-height:1.35;padding:18mm 20mm 17mm}
+.kwitansi-page .kwitansi-content{height:262mm;overflow:hidden}
 .kwitansi-page .kw-title{text-align:center;font-size:17pt;font-weight:700;font-style:italic;letter-spacing:.12em;margin:0 0 9mm}
 .kwitansi-page .kw-row{display:grid;grid-template-columns:44mm 5mm minmax(0,1fr);align-items:start;margin:0 0 2.6mm;font-size:11pt;line-height:1.4}
 .kwitansi-page .kw-row .kw-c{text-align:left}
@@ -55,6 +56,7 @@ function kwitansiDataForIndex(index){
     tempat:normalizeKecamatan(d.kecamatan||''),
     tanggal:dmy(d.tanggal),
     bukti:d.bukti,
+    category:clean(d.category||''),
     ttdKepala:state.surat?.tandaTangan||'assets/s_perintah_img_2.png',
     ttdBendahara:state.surat?.tandaTanganBendahara||''
   };
@@ -82,10 +84,13 @@ function kwitansiHtml(k){
 function buildKwitansiPagesForIndex(index){
   const host=document.createElement('div');
   host.className='surat-pages';
+  const data=kwitansiDataForIndex(index);
   const page=document.createElement('div');
   page.className='surat-page kwitansi-page';
-  page.innerHTML=kwitansiHtml(kwitansiDataForIndex(index));
+  page.innerHTML='<div class="surat-page-content kwitansi-content"></div><div class="surat-page-footer"></div>';
+  page.querySelector('.kwitansi-content').innerHTML=kwitansiHtml(data);
   host.appendChild(page);
+  if(typeof ns.decorateSuratPages==='function')ns.decorateSuratPages(host,data.bukti,data.category);
   return host;
 }
 

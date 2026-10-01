@@ -3,7 +3,7 @@
 
 const $ = id => document.getElementById(id);
 const state = {
-  file:null, rows:[], rawRows:[], result:null, search:"",
+  file:null, rows:[], rawRows:[], result:null, search:"", category:"",
   identity:{school:"",kecamatan:"",alamat:"",npsn:"",headName:"",headNip:"",treasurerName:"",treasurerNip:"",kabupaten:"",provinsi:""},
   surat:{rowIndex:-1,bukti:"",nomor:"SD.123",tanggal:"",sd:"",kecamatan:"",alamat:"",email:"sdnkrian20604911@gmail.com",npsn:"",nss:"101280409030",bendahara:"",nipBendahara:"",kepada:"",uraian:"",untukPembayaran:"",kepala:"",nipKepala:"",tandaTangan:"",tandaTanganBendahara:"",logoSekolah:"",logoKabupaten:"assets/logo_kabupaten_serang.png"},
   suratByBukti:{}
@@ -16,8 +16,10 @@ function suratElement(key){
   return $(ids[key] || ('surat'+key.charAt(0).toUpperCase()+key.slice(1)));
 }
 function setTab(name){
-  const isBku=name==='bku', isSurat=name==='surat', isPajak=name==='pajak';
+  const isDashboard=name==='dashboard', isBku=name==='bku', isSurat=name==='surat', isPajak=name==='pajak';
+  if($('tabDashboard'))$('tabDashboard').classList.toggle('active',isDashboard);
   $('tabBku').classList.toggle('active',isBku); $('tabSurat').classList.toggle('active',isSurat); $('tabPajak').classList.toggle('active',isPajak);
+  if($('tabDashboardBtn')){ $('tabDashboardBtn').classList.toggle('active',isDashboard); $('tabDashboardBtn').setAttribute('aria-selected',String(isDashboard)); }
   $('tabBkuBtn').classList.toggle('active',isBku); $('tabSuratBtn').classList.toggle('active',isSurat); $('tabPajakBtn').classList.toggle('active',isPajak);
   $('tabBkuBtn').setAttribute('aria-selected',String(isBku)); $('tabSuratBtn').setAttribute('aria-selected',String(isSurat)); $('tabPajakBtn').setAttribute('aria-selected',String(isPajak));
 }

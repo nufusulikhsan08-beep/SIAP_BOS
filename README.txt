@@ -138,3 +138,29 @@ UPDATE v21 — FITUR KWITANSI (otomatis mengikuti No. Bukti)
 - Cetak / PDF mengikuti dokumen yang sedang tampil (Surat atau Kwitansi), A4 portrait.
 - Cetak / PDF Massal: pilihan dokumen "Surat Perintah", "Kwitansi", atau "Surat + Kwitansi".
 - File baru: js/kwitansi.js. Perubahan kecil: index.html, main.js, surat.js, surat-viewer.js, styles.css.
+
+=== PERBAIKAN MESIN EKSTRAKSI v2 ===
+- Excel: header BKU kini dikenali lebih fleksibel (Tanggal/Tgl, Uraian/Keterangan/Rincian, Pengeluaran/Belanja/Keluar/Debit, dsb.).
+- Excel: mendukung header bertingkat sampai beberapa baris dan tanggal yang kosong pada baris lanjutan dengan meneruskan tanggal sebelumnya.
+- Excel: No. Bukti BPU/BNU tidak wajib; transaksi dengan Pengeluaran tetap dipertahankan.
+- Excel: tersedia pemulihan untuk format satu-baris/teks gabungan bila struktur kolom tidak normal.
+- PDF: posisi kolom dapat dideteksi dari header halaman dan tetap memiliki fallback ke geometri BKU standar.
+- PDF: validasi total hanya dijalankan bila baris Jumlah benar-benar ditemukan, sehingga PDF tanpa baris total tidak dianggap gagal.
+- PDF/Excel: format tanggal dan nominal Indonesia dibaca lebih toleran.
+- Dashboard tetap menjadi halaman pertama dan sidebar memiliki mode kompak biru dengan teks FORSITAS KECAMATAN LEBAK WANGI.
+
+
+PERBAIKAN FITUR BACA DATA - 1 OKTOBER 2026
+- Tombol BACA DATA tetap memproses Excel/PDF walaupun identitas kecamatan belum terbaca sempurna.
+- Validasi kecamatan hanya menolak bila dokumen secara eksplisit menunjukkan kecamatan selain LEBAK WANGI.
+- Excel menggunakan tiga lapis pembacaan: header standar, pemulihan baris, dan fallback pola isi.
+- No. Bukti BPU/BNU tidak menjadi syarat wajib transaksi.
+- Nominal Pengeluaran dan tanggal yang valid diprioritaskan agar transaksi tidak hilang hanya karena format kolom berbeda.
+- PDF.js dan XLSX memiliki URL CDN cadangan (jsDelivr) bila CDN utama tidak tersedia.
+- Bila dijalankan tanpa internet, pustaka PDF/Excel tetap memerlukan salinan vendor lokal; aplikasi akan menampilkan pesan yang jelas saat mesin belum tersedia.
+
+PERBAIKAN CRITICAL - 1 OKTOBER 2026
+- Memperbaiki crash pada fungsi render: layout FIXED memang tidak lagi memiliki metrik mFile/mPages/mRows/mTotal/mIncome, tetapi bku-ui.js masih mengakses elemen tersebut secara langsung. Sekarang elemen metrik lama bersifat opsional sehingga tidak menghentikan aplikasi.
+- Dampak bug sebelumnya: render awal gagal -> inisialisasi Project Store tidak pernah selesai -> tombol BUKA PEKERJAAN tidak mendapat event handler -> proses BACA DATA juga berhenti saat render dipanggil.
+- Layout Dashboard/sidebar dan fitur yang sudah ada dipertahankan; perbaikan hanya pada kompatibilitas render dengan layout FIXED.
+- Mesin ekstraksi PDF/Excel versi FIXED tetap dipertahankan sebagai dasar, bukan diganti dengan layout atau implementasi dari SPMU_OTOMATIS_V2-main.

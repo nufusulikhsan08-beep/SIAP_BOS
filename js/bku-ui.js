@@ -2,8 +2,8 @@
 'use strict';
 const {
   $,state,esc,formatMoney,clean,groupRowsByBukti,validateBkuKecamatan,finalizeBkuIdentity,applyIdentityToSurat,
-  readPdf,readExcel,resetAutoIdentity,normalizeNoBukti,getTaxRows,sanitizeUraian,
-  pdfColumns,groupPdfLines,lineText,extractPdfIdentityPage,extractPdfSignatures,
+  readPdf,readExcel,resetAutoIdentity,normalizeNoBukti,getTaxRows,getTaxSummary,sanitizeUraian,
+  pdfColumns,detectPdfColumns,groupPdfLines,lineText,extractPdfIdentityPage,extractPdfSignatures,
   extractColumnText,extractColumnMoney,findPdfDateRows,buildPdfRowBands,isInternalMovement
 }=ns;
 const syncSurat=()=>ns.syncSurat();
@@ -19,8 +19,9 @@ function renderRawRows(){
 }
 function renderTaxes(){
   const all=getTaxRows(), s=all.filter(x=>x.siplah), n=all.filter(x=>!x.siplah);
-  const st=s.reduce((a,x)=>a+x.amount,0), nt=n.reduce((a,x)=>a+x.amount,0);
-  $('taxSiplahTotal').textContent=formatMoney(st); $('taxNonSiplahTotal').textContent=formatMoney(nt); $('taxGrandTotal').textContent=formatMoney(st+nt); $('taxCount').textContent=all.length;
+  const summary=getTaxSummary();
+  const st=summary.siplahTotal, nt=summary.nonSiplahTotal;
+  $('taxSiplahTotal').textContent=formatMoney(st); $('taxNonSiplahTotal').textContent=formatMoney(nt); $('taxGrandTotal').textContent=formatMoney(summary.grandTotal); $('taxCount').textContent=summary.count;
   $('taxSiplahFooter').textContent=formatMoney(st); $('taxNonSiplahFooter').textContent=formatMoney(nt);
   const paint=(rows,el)=>{
     if(!rows.length){el.innerHTML='<tr><td colspan="6" class="empty">Tidak ada transaksi pajak pada kategori ini.</td></tr>';return;}
@@ -29,8 +30,15 @@ function renderTaxes(){
   paint(s,$('taxSiplahBody')); paint(n,$('taxNonSiplahBody'));
 }
 function render(){
-  $('mFile').textContent=state.file?.name||'—'; $('mPages').textContent=state.result?.pages??0; $('mRows').textContent=state.rows.length;
-  $('mTotal').textContent=formatMoney(state.rows.reduce((s,r)=>s+r.pengeluaran,0)); $('mIncome').textContent=formatMoney(state.result?.excludedIncome||0);
+  // Ringkasan metrik mFile/mPages/mRows/mTotal/mIncome ada pada layout lama,
+  // tetapi memang tidak ditampilkan pada layout FIXED. Jangan biarkan elemen
+  // opsional yang hilang menghentikan seluruh render, ekstraksi, dan Project Store.
+  const setText=(id,value)=>{const el=$(id);if(el)el.textContent=value;};
+  setText('mFile',state.file?.name||'—');
+  setText('mPages',state.result?.pages??0);
+  setText('mRows',state.rows.length);
+  setText('mTotal',formatMoney(state.rows.reduce((s,r)=>s+r.pengeluaran,0)));
+  setText('mIncome',formatMoney(state.result?.excludedIncome||0));
   $('sourceInfo').textContent=state.result?`${state.result.blocks} blok/baris diperiksa • ${state.result.rawRowCount??state.rows.length} transaksi murni → ${state.rows.length} rincian setelah penggabungan kode BPU/BNU • ${state.result.ignoredRows} diabaikan`:'Belum ada file dibaca.';
   const tb=$('tbody'); const shown=state.rows.map((r,i)=>({...r,_index:i})).filter(r=>!state.search||`${r.tanggal} ${r.noBukti} ${r.uraian}`.toLowerCase().includes(state.search.toLowerCase()));
   if(!shown.length)tb.innerHTML=`<tr><td colspan="5" class="empty">${state.rows.length?'Tidak ada transaksi yang cocok dengan pencarian.':'Belum ada data. Impor dokumen untuk memulai.'}</td></tr>`;
@@ -84,7 +92,12 @@ async function extractBkuData(){
       mrLoading(`MR. LOADING MEMBACA HALAMAN ${page}/${total}`,`Menganalisis teks dan posisi kolom halaman ${page}.`,pct);
       $('status').textContent=`Membaca BKU: halaman ${page} dari ${total}…`;
     }):await readExcel(state.file);
-    rawResult.identity=validateBkuKecamatan(finalizeBkuIdentity(rawResult.identity||{}));
+    const evidenceText=[rawResult?.identity?.rawAddress, ...(rawResult?.identity?Object.values(rawResult.identity):[]), rawResult?.locationEvidence||''].map(v=>String(v||'')).join(' | ');
+    rawResult.identity=validateBkuKecamatan(finalizeBkuIdentity(rawResult.identity||{}), evidenceText);
+    if(rawResult.identity.locationWarning){
+      rawResult.warnings=rawResult.warnings||[];
+      rawResult.warnings.unshift('⚠ '+rawResult.identity.locationWarning);
+    }
     const rawRows=rawResult.rows||[];
     rawResult.rawRowCount=rawRows.length;
     rawResult.groupedRowCount=groupRowsByBukti(rawRows).length;
@@ -98,7 +111,7 @@ async function extractBkuData(){
     render();
     if(!state.rows.length)throw new Error('Dokumen terbaca, tetapi tidak ditemukan transaksi pengeluaran yang bisa diproses.');
     const v=state.result.validation;
-    if(v?.ok)$('status').textContent=`Ekstraksi BKU selesai. ${state.rows.length} transaksi pengeluaran valid. Total ${formatMoney(v.actualIncluded)}. Validasi PDF: OK.`;
+    if(v?.ok)$('status').textContent=`Ekstraksi BKU selesai. ${state.rows.length} transaksi pengeluaran valid. Total ${formatMoney(v.actualIncluded ?? v.rawExpenseTotal ?? 0)}.`;
     else $('status').textContent=`Ekstraksi BKU selesai. ${state.rows.length} transaksi pengeluaran berhasil dipetakan.`;
     if(v && typeof v==='object' && v.rawExpenseTotal!==undefined && v.declaredTotal!==undefined && v.rawExpenseTotal===v.declaredTotal){
       state.result.warnings.unshift(`Validasi PDF OK: total Pengeluaran tercetak ${formatMoney(v.declaredTotal)} = total seluruh baris transaksi. Tarik Tunai ${formatMoney(v.internalTransferTotal)} dikeluarkan sebagai pemindahan dana internal; total biaya kegiatan ${formatMoney(v.actualIncluded)}.`);
@@ -122,13 +135,13 @@ async function readPdfWithProgress(file,onProgress){
   const pdf=await window.pdfjsLib.getDocument({data:buf,disableWorker:true}).promise;
   // Ulangi pembacaan inti PDF sambil memberi progress per halaman.
   const rows=[];const identity={school:"",kecamatan:"",alamat:"",rawAddress:"",npsn:"",headName:"",headNip:"",treasurerName:"",treasurerNip:"",kabupaten:"",provinsi:""};
-  let income=0,blocks=0,ignored=0,internalTransferTotal=0,rawExpenseTotal=0,declaredTotal=0;
+  let income=0,blocks=0,ignored=0,internalTransferTotal=0,rawExpenseTotal=0,declaredTotal=0,declaredTotalFound=0;
   for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){
     const page=await pdf.getPage(pageNo);
     const viewport=page.getViewport({scale:1});
-    const cols=pdfColumns(viewport.width);
     const c=await page.getTextContent();
     const items=(c.items||[]).map(x=>({text:String(x.str||''),x:Number(x.transform?.[4]||0),y:Number(x.transform?.[5]||0),width:Number(x.width||0),height:Number(x.height||0)}));
+    const cols=detectPdfColumns(items,viewport.width);
     const lines=groupPdfLines(items,2.5);
     if(pageNo===1)Object.assign(identity,extractPdfIdentityPage(items));
     const sig=extractPdfSignatures(items);
@@ -139,7 +152,7 @@ async function readPdfWithProgress(file,onProgress){
     for(const line of lines){
       if(/^Jumlah\b/i.test(lineText(line))){
         const v=extractColumnMoney(line.items,cols.pengeluaran);
-        if(v>0||extractColumnText(line.items,cols.pengeluaran)==='0')declaredTotal+=v;
+        if(v>0||extractColumnText(line.items,cols.pengeluaran)==='0'){declaredTotal+=v;declaredTotalFound++;}
       }
     }
     const dateRows=findPdfDateRows(items,cols);
@@ -161,13 +174,13 @@ async function readPdfWithProgress(file,onProgress){
     }
     if(typeof onProgress==='function')onProgress(pageNo,pdf.numPages);
   }
-  const expectedIncluded=Math.max(0,declaredTotal-internalTransferTotal);
+  const expectedIncluded=declaredTotalFound?Math.max(0,declaredTotal-internalTransferTotal):0;
   const actualIncluded=rows.reduce((s,r)=>s+r.pengeluaran,0);
   const warnings=[];
   if(rows.length===0)warnings.push('Tidak ada transaksi pengeluaran yang berhasil dipetakan dari teks PDF.');
-  if(declaredTotal!==rawExpenseTotal)warnings.push(`Validasi total PDF gagal: kolom Pengeluaran pada baris Jumlah = ${formatMoney(declaredTotal)}, tetapi penjumlahan baris transaksi = ${formatMoney(rawExpenseTotal)}.`);
-  if(expectedIncluded!==actualIncluded)warnings.push(`Ada selisih setelah mengeluarkan Tarik Tunai: target ${formatMoney(expectedIncluded)}, hasil ${formatMoney(actualIncluded)}. Periksa format PDF/kolom.`);
-  return {rows,declaredTotal,rawExpenseTotal,internalTransferTotal,expectedIncluded,actualIncluded,excludedIncome:income,pages:pdf.numPages,blocks,ignoredRows:ignored,warnings,identity:finalizeBkuIdentity(identity),validation:{declaredTotal,rawExpenseTotal,internalTransferTotal,expectedIncluded,actualIncluded,ok:declaredTotal===rawExpenseTotal&&expectedIncluded===actualIncluded},validationRule:'Semua pengeluaran dari kolom PENGELUARAN dipertahankan, kecuali Tarik Tunai (pemindahan dana internal). Terima/pemasukan dan saldo diabaikan.'};
+  if(declaredTotalFound&&declaredTotal!==rawExpenseTotal)warnings.push(`Validasi total PDF gagal: kolom Pengeluaran pada baris Jumlah = ${formatMoney(declaredTotal)}, tetapi penjumlahan baris transaksi = ${formatMoney(rawExpenseTotal)}.`);
+  if(declaredTotalFound&&expectedIncluded!==actualIncluded)warnings.push(`Ada selisih setelah mengeluarkan Tarik Tunai: target ${formatMoney(expectedIncluded)}, hasil ${formatMoney(actualIncluded)}. Periksa format PDF/kolom.`);
+  return {rows,declaredTotal,declaredTotalFound,rawExpenseTotal,internalTransferTotal,expectedIncluded,actualIncluded,excludedIncome:income,pages:pdf.numPages,blocks,ignoredRows:ignored,warnings,identity:finalizeBkuIdentity(identity),validation:{declaredTotal,declaredTotalFound,rawExpenseTotal,internalTransferTotal,expectedIncluded,actualIncluded,ok:declaredTotalFound?(declaredTotal===rawExpenseTotal&&expectedIncluded===actualIncluded):rows.length>0},validationRule:'Semua pengeluaran dari kolom PENGELUARAN dipertahankan, kecuali Tarik Tunai (pemindahan dana internal). Terima/pemasukan dan saldo diabaikan.'};
 }
 
 Object.assign(ns,{renderRawRows,renderTaxes,render,mrLoading,mrLoadingSuccess,mrLoadingError,extractBkuData,readPdfWithProgress});

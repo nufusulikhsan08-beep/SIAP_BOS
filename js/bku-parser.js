@@ -2,7 +2,7 @@
 'use strict';
 const {$,state,suratElement,esc}=ns;
 
-const dateRe=/\b\d{2}[-/]\d{2}[-/]\d{4}\b/g;
+const dateRe=/(?:\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b|\b\d{1,2}[-/]\d{1,2}[-/]\d{4}\b|\b\d{1,2}\.\d{1,2}\.\d{4}\b)/g;
 const noBuktiRe=/\b(?:BPU|BNU)\s*[-./]?\s*\d+\b/gi;
 const leadingCodeRe=/^(?:(?:\d{1,3}\.){1,10}\d{1,3}\.?\s*)+/;
 const activityCodeRe=/(?<!\d)\d{2}\.\d{2}\.\d{2}\.?/g;
@@ -29,10 +29,31 @@ const PDF_BASE_COLS={
 };
 
 function clean(s){return String(s??'').replace(/\s+/g,' ').trim();}
-function normalizeDate(s){const re=new RegExp(dateRe.source,'i');const m=clean(s).match(re);return m?m[0].replaceAll('/','-'):'';}
+function normalizeDate(s){
+  if(s instanceof Date&&!Number.isNaN(s.getTime())){
+    return `${String(s.getDate()).padStart(2,'0')}-${String(s.getMonth()+1).padStart(2,'0')}-${s.getFullYear()}`;
+  }
+  const x=clean(s);
+  if(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(x)){const [y,m,d]=x.split(/[-/]/);return `${String(d).padStart(2,'0')}-${String(m).padStart(2,'0')}-${y}`;}
+  const m=x.match(/\b(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})\b/);
+  return m?`${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}-${m[3]}`:'';
+}
 function normalizeNoBukti(s){const m=clean(s).match(noBuktiRe);return m?m[0].replace(/\s+/g,'').replace(/[-./]/g,'').toUpperCase():'';}
 function isValidNoBukti(s){return /^(?:BPU|BNU)\d+$/i.test(clean(s));}
-function parseMoney(s){let raw=clean(s).replace(/^Rp\.?\s*/i,'').replace(/\s/g,'').replace(/[()]/g,'');if(!raw)return 0;if(raw.includes('.')&&raw.includes(',')){const lc=raw.lastIndexOf(','),ld=raw.lastIndexOf('.');if(lc>ld)return Math.round(Number(raw.replace(/\./g,'').replace(',','.'))||0);}return Math.round(Number(raw.replace(/[.,]/g,''))||0);}
+function parseMoney(s){
+  let raw=clean(s).replace(/^Rp\.?\s*/i,'').replace(/\s/g,'').replace(/[()]/g,'');
+  if(!raw)return 0;
+  const negative=/^-/.test(raw); raw=raw.replace(/^-|^\+/,'');
+  if(raw.includes('.')&&raw.includes(',')){
+    const lc=raw.lastIndexOf(','),ld=raw.lastIndexOf('.');
+    raw=lc>ld?raw.replace(/\./g,'').replace(',','.'):raw.replace(/,/g,'');
+  }else if(raw.includes(',')&&/\,\d{1,2}$/.test(raw)){
+    raw=raw.replace(/\./g,'').replace(',','.');
+  }else{
+    raw=raw.replace(/[.,]/g,'');
+  }
+  const n=Number(raw); return Number.isFinite(n)?Math.round((negative?-1:1)*n):0;
+}
 function formatMoney(n){return Math.round(n||0).toLocaleString('id-ID');}
 function stripMetadata(s){let x=clean(s);x=x.replace(dateRe,' ');x=x.replace(noBuktiRe,' ');x=x.replace(/^\s*[:;|,-]+\s*/,'');x=x.replace(/^\s*(?:kode\s+(?:kegiatan|rekening)\s*[:.-]?\s*)+/i,'');x=x.replace(leadingCodeRe,'');return clean(x);}
 function sanitizeUraian(s){let x=stripMetadata(s);x=x.replace(/^\s*[|:;,\-]+\s*/,'').replace(/\s*[|:;,]+\s*$/,'');return clean(x);}
@@ -86,12 +107,52 @@ function extractColumnMoney(items,bounds){
   const matches=[...cell.matchAll(new RegExp(moneyTokenRe.source,'gi'))].map(m=>clean(m[0])).filter(t=>moneyOnlyRe.test(t));
   return matches.length?parseMoney(matches[matches.length-1]):0;
 }
+function detectPdfColumns(items,pageWidth){
+  const fallback=pdfColumns(pageWidth);
+  const lines=groupPdfLines(items,2.8);
+  const rules={
+    tanggal:/^(?:tgl|tanggal)$/i,
+    bukti:/\bbukti\b/i,
+    uraian:/uraian|keterangan|deskripsi|rincian/i,
+    penerimaan:/penerimaan|\bmasuk\b/i,
+    pengeluaran:/pengeluaran|belanja|\bkeluar\b/i,
+    saldo:/^saldo$|\bsaldo\b/i
+  };
+  const found={};
+  let bestScore=0;
+  for(const line of lines){
+    const text=lineText(line);
+    let score=0; const local={};
+    for(const [key,re] of Object.entries(rules)){
+      const item=line.items.find(i=>re.test(pdfItemText(i)));
+      if(item){local[key]=itemCenterX(item);score++;continue;}
+      if(key==='bukti'&&/no\.?\s*bukti|nomor\s*bukti/i.test(text)){
+        const itemsOnLine=line.items.filter(i=>/no|bukti|nomor/i.test(pdfItemText(i)));
+        if(itemsOnLine.length)local[key]=itemsOnLine.reduce((a,i)=>a+itemCenterX(i),0)/itemsOnLine.length;
+      }
+    }
+    if(score>bestScore){bestScore=score;Object.assign(found,local);}
+  }
+  if(bestScore<3)return fallback;
+  const out={...fallback};
+  const ordered=Object.entries(found).sort((a,b)=>a[1]-b[1]);
+  for(const [key,x] of ordered){
+    let left=0,right=Number(pageWidth)||PDF_BASE_WIDTH;
+    const idx=ordered.findIndex(([k])=>k===key);
+    if(idx>0)left=(ordered[idx-1][1]+x)/2;
+    if(idx<ordered.length-1)right=(x+ordered[idx+1][1])/2;
+    out[key]=[left,right];
+  }
+  return out;
+}
+
 function findPdfDateRows(items,cols){
   const rows=[];
   for(const item of items){
     if(!inPdfCol(item,cols.tanggal))continue;
     const t=pdfItemText(item);
-    if(/^\d{2}[-/]\d{2}[-/]\d{4}$/.test(t))rows.push({item,y:Number(item.y||0),tanggal:normalizeDate(t)});
+    const tanggal=normalizeDate(t);
+    if(tanggal)rows.push({item,y:Number(item.y||0),tanggal});
   }
   rows.sort((a,b)=>b.y-a.y);
   const ded=[];
@@ -147,16 +208,22 @@ function resolveBkuKecamatan(identity){
   if(/\blebak\s+wangi\b/i.test(raw))return 'Lebak Wangi';
   return '';
 }
-function validateBkuKecamatan(identity){
-  const kec=resolveBkuKecamatan(identity);
+function validateBkuKecamatan(identity, evidenceText=''){
+  const x={...(identity||{})};
+  const raw=[x.rawAddress,x.kecamatan,evidenceText].map(clean).filter(Boolean).join(' | ');
+  let kec=resolveBkuKecamatan(x);
   if(!kec){
-    throw new Error('BKU tidak dapat diekstrak karena kecamatan tidak terbaca. Aplikasi ini hanya menerima BKU dari Kecamatan Lebak Wangi.');
+    const m=raw.match(/\b(?:Kecamatan|Kec\.)\s*[:.-]?\s*([A-Za-z][A-Za-z .'-]{2,60}?)(?=,|;|\bKab(?:upaten)?\.|\bProv(?:insi)?\.|$)/i);
+    if(m)kec=normalizeKecamatan(m[1]);
   }
-  if(normalizeKecamatan(kec).toLocaleUpperCase('id-ID')!==ALLOWED_BKU_KECAMATAN){
+  const upper=normalizeKecamatan(kec).toLocaleUpperCase('id-ID');
+  if(kec && upper!==ALLOWED_BKU_KECAMATAN){
     throw new Error(`BKU ditolak. Kecamatan terdeteksi: ${kec}. Aplikasi ini hanya menerima BKU dari Kecamatan Lebak Wangi.`);
   }
-  identity.kecamatan='Lebak Wangi';
-  return identity;
+  if(kec) x.kecamatan='Lebak Wangi';
+  x.locationValidated=!!kec;
+  x.locationWarning=kec?'':('Kecamatan belum terbaca dari dokumen. Data transaksi tetap dibaca, tetapi identitas lokasi perlu diperiksa manual.');
+  return x;
 }
 function extractKecamatanFromAddress(v){
   const t=clean(v);
@@ -246,14 +313,14 @@ async function readPdf(file){
   const buf=await file.arrayBuffer();
   const pdf=await window.pdfjsLib.getDocument({data:buf,disableWorker:true}).promise;
   const rows=[];const identity={school:"",kecamatan:"",alamat:"",rawAddress:"",npsn:"",headName:"",headNip:"",treasurerName:"",treasurerNip:"",kabupaten:"",provinsi:""};
-  let income=0,blocks=0,ignored=0,internalTransferTotal=0,rawExpenseTotal=0,declaredTotal=0;
+  let income=0,blocks=0,ignored=0,internalTransferTotal=0,rawExpenseTotal=0,declaredTotal=0,declaredTotalFound=0;
 
   for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){
     const page=await pdf.getPage(pageNo);
     const viewport=page.getViewport({scale:1});
-    const cols=pdfColumns(viewport.width);
     const c=await page.getTextContent();
     const items=(c.items||[]).map(x=>({text:String(x.str||''),x:Number(x.transform?.[4]||0),y:Number(x.transform?.[5]||0),width:Number(x.width||0),height:Number(x.height||0)}));
+    const cols=detectPdfColumns(items,viewport.width);
     const lines=groupPdfLines(items,2.5);
     if(pageNo===1)Object.assign(identity,extractPdfIdentityPage(items));
     const sig=extractPdfSignatures(items);
@@ -266,7 +333,7 @@ async function readPdf(file){
     for(const line of lines){
       if(/^Jumlah\b/i.test(lineText(line))){
         const v=extractColumnMoney(line.items,cols.pengeluaran);
-        if(v>0||extractColumnText(line.items,cols.pengeluaran)==='0')declaredTotal+=v;
+        if(v>0||extractColumnText(line.items,cols.pengeluaran)==='0'){declaredTotal+=v;declaredTotalFound++;}
       }
     }
 
@@ -295,69 +362,211 @@ async function readPdf(file){
     }
   }
 
-  const expectedIncluded=Math.max(0,declaredTotal-internalTransferTotal);
+  const expectedIncluded=declaredTotalFound?Math.max(0,declaredTotal-internalTransferTotal):0;
   const actualIncluded=rows.reduce((s,r)=>s+r.pengeluaran,0);
   const warnings=[];
   if(rows.length===0)warnings.push('Tidak ada transaksi pengeluaran yang berhasil dipetakan dari teks PDF.');
-  if(declaredTotal!==rawExpenseTotal)warnings.push(`Validasi total PDF gagal: kolom Pengeluaran pada baris Jumlah = ${formatMoney(declaredTotal)}, tetapi penjumlahan baris transaksi = ${formatMoney(rawExpenseTotal)}.`);
-  if(expectedIncluded!==actualIncluded)warnings.push(`Ada selisih setelah mengeluarkan Tarik Tunai: target ${formatMoney(expectedIncluded)}, hasil ${formatMoney(actualIncluded)}. Periksa format PDF/kolom.`);
+  if(declaredTotalFound&&declaredTotal!==rawExpenseTotal)warnings.push(`Validasi total PDF gagal: kolom Pengeluaran pada baris Jumlah = ${formatMoney(declaredTotal)}, tetapi penjumlahan baris transaksi = ${formatMoney(rawExpenseTotal)}.`);
+  if(declaredTotalFound&&expectedIncluded!==actualIncluded)warnings.push(`Ada selisih setelah mengeluarkan Tarik Tunai: target ${formatMoney(expectedIncluded)}, hasil ${formatMoney(actualIncluded)}. Periksa format PDF/kolom.`);
 
   return {
-    rows,declaredTotal,rawExpenseTotal,internalTransferTotal,expectedIncluded,actualIncluded,
+    rows,declaredTotal,declaredTotalFound,rawExpenseTotal,internalTransferTotal,expectedIncluded,actualIncluded,
     excludedIncome:income,pages:pdf.numPages,blocks,ignoredRows:ignored,warnings,
     identity:finalizeBkuIdentity(identity),
-    validation:{declaredTotal,rawExpenseTotal,internalTransferTotal,expectedIncluded,actualIncluded,ok:declaredTotal===rawExpenseTotal&&expectedIncluded===actualIncluded},
+    validation:{declaredTotal,declaredTotalFound,rawExpenseTotal,internalTransferTotal,expectedIncluded,actualIncluded,ok:declaredTotalFound?(declaredTotal===rawExpenseTotal&&expectedIncluded===actualIncluded):rows.length>0},
     // BPU/BNU tidak lagi menjadi syarat untuk PDF. Pajak "Setor ..." dan transaksi
     // SIPLah tanpa No. Bukti tetap merupakan pengeluaran yang sah dan dipertahankan.
     validationRule:'Semua pengeluaran dari kolom PENGELUARAN dipertahankan, kecuali Tarik Tunai (pemindahan dana internal). Terima/pemasukan dan saldo diabaikan.'
   };
 }
-function excelDate(v){if(typeof v==='number'&&window.XLSX?.SSF){const d=window.XLSX.SSF.parse_date_code(v);if(d)return `${String(d.d).padStart(2,'0')}-${String(d.m).padStart(2,'0')}-${d.y}`;}return normalizeDate(v)||clean(v);}
+function excelDate(v){
+  if(v instanceof Date&&!Number.isNaN(v.getTime()))return normalizeDate(v);
+  if(typeof v==='number'&&window.XLSX?.SSF){const d=window.XLSX.SSF.parse_date_code(v);if(d)return `${String(d.d).padStart(2,'0')}-${String(d.m).padStart(2,'0')}-${d.y}`;}
+  return normalizeDate(v)||clean(v);
+}
 function recoverLegacy(text){
-  const t=clean(text);
-  const money=getMoney3(t);
-  if(!money)return null;
-  const nm=t.match(noBuktiRe);
-  const noBukti=nm?normalizeNoBukti(nm[0]):'';
-  // File Excel lama juga wajib memiliki No. Bukti BPU/BNU.
-  if(!isValidNoBukti(noBukti))return null;
-  let core=t;
-  const dm=core.match(new RegExp(dateRe.source,'i'));
-  if(dm)core=core.slice((dm.index||0)+dm[0].length);
-  core=core.replace(noBuktiRe,' ');
-  core=core.replace(activityCodeRe,' ');
-  core=core.replace(accountCodeRe,' ');
-  core=clean(core);
-  // After metadata masking, the first valid money token is Penerimaan.
-  const fm=core.match(new RegExp(moneyTokenRe.source));
-  if(!fm)return null;
-  const uraian=sanitizeUraian(core.slice(0,fm.index));
-  if(!uraian)return null;
+  const t=clean(text); const money=getMoney3(t); if(!money)return null;
+  const nm=t.match(noBuktiRe); const noBukti=nm?normalizeNoBukti(nm[0]):'';
+  let core=t; const dm=core.match(new RegExp(dateRe.source,'i')); if(dm)core=core.slice((dm.index||0)+dm[0].length);
+  core=core.replace(noBuktiRe,' ').replace(activityCodeRe,' ').replace(accountCodeRe,' '); core=clean(core);
+  const fm=core.match(new RegExp(moneyTokenRe.source)); if(!fm)return null;
+  const uraian=sanitizeUraian(core.slice(0,fm.index)); if(!uraian)return null;
   return {noBukti,uraian,penerimaan:money.penerimaan,pengeluaran:money.pengeluaran,saldo:money.saldo};
 }
-async function readExcel(file){
-  if(!window.XLSX)throw new Error('Mesin Excel belum siap. Pastikan koneksi internet aktif saat pertama kali membuka aplikasi, lalu coba BACA DATA lagi.');
-  const wb=window.XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});const rows=[];let income=0,ignored=0;let sheets=0;
-  for(const name of wb.SheetNames){const sh=wb.Sheets[name];const mat=window.XLSX.utils.sheet_to_json(sh,{header:1,defval:''});const hi=mat.findIndex(r=>r.some(v=>/tanggal/i.test(v))&&r.some(v=>/uraian|keterangan/i.test(v))&&r.some(v=>/pengeluaran/i.test(v)));if(hi<0)continue;sheets++;
-    const h=mat[hi].map(v=>clean(v).toLowerCase());const di=h.findIndex(v=>v.includes('tanggal'));const bi=h.findIndex(v=>v.includes('bukti'));const ui=h.findIndex(v=>v.includes('uraian')||v.includes('keterangan'));const ei=h.findIndex(v=>v.includes('pengeluaran'));const pi=h.findIndex(v=>v.includes('penerimaan'));
-    for(let i=hi+1;i<mat.length;i++){const r=mat[i]||[];let tanggal=excelDate(r[di]);let noBukti=bi>=0?normalizeNoBukti(r[bi]):'';let uraian=ui>=0?sanitizeUraian(r[ui]):'';let pengeluaran=ei>=0?parseMoney(r[ei]):0;let penerimaan=pi>=0?parseMoney(r[pi]):0;let source=`sheet ${name}`;
-      const legacy=ui>=0?recoverLegacy(r[ui]):null;if(legacy){noBukti=noBukti||legacy.noBukti;uraian=legacy.uraian;if(pengeluaran<=0)pengeluaran=legacy.pengeluaran;if(penerimaan<=0)penerimaan=legacy.penerimaan;source+= ' • dipulihkan';}
-      // VALIDASI FINAL: tanpa No. Bukti BPU/BNU, baris tidak boleh masuk tabel/export.
-      if(!isValidNoBukti(noBukti)){ignored++;continue;}
-      if(!tanggal||!uraian){ignored++;continue;}if(pengeluaran<=0){income+=penerimaan;ignored++;continue;}rows.push({tanggal,noBukti,uraian,pengeluaran,confidence:legacy?.noBukti?0.96:0.99,source});}
+function normalizeHeader(v){return clean(v).toLowerCase().replace(/[\n\r]+/g,' ').replace(/[._:;|/\\()\-]+/g,' ').replace(/\s+/g,' ').trim();}
+function headerIndex(headers,patterns){return headers.findIndex(v=>patterns.some(re=>re.test(v)));}
+function mergedHeaderRows(mat,start,span){
+  const maxCols=Math.max(0,...mat.slice(start,start+span).map(r=>(r||[]).length));
+  const out=Array(maxCols).fill('');
+  for(let c=0;c<maxCols;c++){
+    const vals=[];
+    for(let rr=start;rr<Math.min(mat.length,start+span);rr++){
+      const v=normalizeHeader((mat[rr]||[])[c]); if(v)vals.push(v);
+    }
+    out[c]=clean(vals.join(' '));
   }
-  const flat=[];
-  for(const name of wb.SheetNames){const mat=window.XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});for(const row of mat)for(const v of (row||[])){const t=clean(v);if(t)flat.push(t);}}
-  const ei={};
-  for(const t of flat){
-    if(/^NPSN\b/i.test(t))ei.npsn=extractNip(afterLabelValue(t,'NPSN\\b')||t);
-    else if(/^Nama\s+Sekolah\b/i.test(t))ei.school=afterLabelValue(t,'Nama\\s+Sekolah\\b');
-    else if(/^Desa\/Kecamatan\b/i.test(t))ei.rawAddress=afterLabelValue(t,'Desa\\/Kecamatan\\b');
-    else if(/^(?:Kabupaten\s*\/\s*Kota)\b/i.test(t))ei.kabupaten=afterLabelValue(t,'Kabupaten\\s*\/\\s*Kota');
-    else if(/^Provinsi\b/i.test(t))ei.provinsi=afterLabelValue(t,'Provinsi\\b');
-  }
-  return {rows,declaredTotal:null,excludedIncome:income,pages:sheets,blocks:rows.length+ignored,ignoredRows:ignored,warnings:rows.length?[]:['Sheet dengan struktur Tanggal/Uraian/Pengeluaran tidak ditemukan.'],identity:finalizeBkuIdentity(ei),validation:'Hanya No. Bukti BPU/BNU yang valid dimasukkan.'};
+  return out;
 }
+function inferExcelColumns(mat,start){
+  const maxCols=Math.max(0,...mat.map(r=>(r||[]).length));
+  const sample=mat.slice(Math.max(start+1,0),Math.min(mat.length,start+81));
+  const dateScore=Array(maxCols).fill(0),numScore=Array(maxCols).fill(0),textScore=Array(maxCols).fill(0);
+  for(const row of sample){
+    for(let c=0;c<maxCols;c++){
+      const v=row?.[c]; const t=clean(v); if(!t)continue;
+      if(normalizeDate(v))dateScore[c]++;
+      if(typeof v==='number'||/^(?:Rp\.?\s*)?[0-9][0-9.,()\s]*$/.test(t))numScore[c]++;
+      if(!normalizeDate(v)&&!(typeof v==='number')&&t.length>=5)textScore[c]+=Math.min(t.length,80);
+    }
+  }
+  const di=dateScore.indexOf(Math.max(...dateScore));
+  let ui=textScore.indexOf(Math.max(...textScore.filter((_,i)=>i!==di)));
+  if(ui<0)ui=-1;
+  const numericCols=[]; for(let c=0;c<maxCols;c++)if(c!==di&&numScore[c]>=2)numericCols.push(c);
+  numericCols.sort((a,b)=>a-b);
+  const ei=numericCols.length>=2?numericCols[numericCols.length-2]:(numericCols[0]??-1);
+  const pi=numericCols.length>=3?numericCols[numericCols.length-3]:-1;
+  return {di,ui,ei,pi,bi:-1,inferred:true};
+}
+function findExcelHeader(mat){
+  const dateReH=/\b(?:tanggal|tgl|tanggal\s+transaksi|date)\b/i;
+  const descReH=/\b(?:uraian|keterangan|rincian|deskripsi|kegiatan|nama\s+barang|uraian\s+transaksi)\b/i;
+  const outReH=/\b(?:pengeluaran|pengeluaran\s+kas|belanja|jumlah\s+pengeluaran|keluar|debit|debet)\b/i;
+  const inReH=/\b(?:penerimaan|jumlah\s+penerimaan|masuk|kredit)\b/i;
+  const proofReH=/\b(?:no\s*bukti|nomor\s*bukti|bukti|bpu|bnu)\b/i;
+  const limit=Math.min(mat.length,35); let best=null;
+  for(let r=0;r<limit;r++){
+    for(const span of [1,2,3]){
+      const h=mergedHeaderRows(mat,r,span); if(!h.length)continue;
+      const di=headerIndex(h,[dateReH]),ui=headerIndex(h,[descReH]),ei=headerIndex(h,[outReH]);
+      const score=(di>=0?3:0)+(ui>=0?3:0)+(ei>=0?4:0)+(headerIndex(h,[inReH])>=0?1:0)+(headerIndex(h,[proofReH])>=0?1:0);
+      if(di>=0&&ui>=0&&ei>=0&&(!best||score>best.score))best={r,span,h,score,col:{di,ui,ei,bi:headerIndex(h,[proofReH]),pi:headerIndex(h,[inReH]),inferred:false}};
+    }
+  }
+  if(best)return best;
+  const inferred=inferExcelColumns(mat,0);
+  if(inferred.di>=0&&inferred.ui>=0&&inferred.ei>=0)return {r:0,span:1,h:[],score:0,col:inferred};
+  return null;
+}
+async function readExcel(file){
+  if(!window.XLSX)throw new Error('Mesin Excel belum siap. Pustaka XLSX tidak tersedia. Pastikan koneksi internet aktif saat membuka aplikasi lalu coba BACA DATA lagi.');
+  const wb=window.XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true,raw:true});
+  const rows=[]; const allText=[]; let income=0,ignored=0,sheets=0,headerFound=0,missingEvidence=0,usedFallback=0;
+
+  const looksLikeDate=v=>!!normalizeDate(v) || (typeof v==='number' && !!excelDate(v));
+  const nonNumericText=v=>{
+    const t=clean(v); if(!t)return false;
+    if(looksLikeDate(v))return false;
+    if(/^[-+]?\s*(?:Rp\.?\s*)?[0-9][0-9.,()\s]*$/.test(t))return false;
+    return t.length>=3;
+  };
+  const rowValues=r=>(r||[]).map((v,c)=>({v,c,t:clean(v),date:looksLikeDate(v),num:parseMoney(v),text:nonNumericText(v)}));
+  const findAmountColumns=(mat,start,col)=>{
+    const maxCols=Math.max(0,...mat.map(r=>(r||[]).length));
+    const scores=Array.from({length:maxCols},()=>({positive:0,total:0,values:[]}));
+    for(let i=start;i<Math.min(mat.length,start+250);i++){
+      const r=mat[i]||[];
+      for(let c=0;c<maxCols;c++){
+        const t=clean(r[c]); if(!t)continue;
+        const n=parseMoney(r[c]);
+        const numeric=typeof r[c]==='number'||/^[-+]?\s*(?:Rp\.?\s*)?[0-9][0-9.,()\s]*$/.test(t);
+        if(numeric){scores[c].total++; if(n>0)scores[c].positive++; scores[c].values.push(n);}
+      }
+    }
+    const candidates=scores.map((s,c)=>({c,...s})).filter(x=>x.total>=2).sort((a,b)=>b.positive-a.positive||b.total-a.total);
+    // Prefer the header-selected output/income columns; otherwise choose the last two numeric columns.
+    const outCandidates=candidates.filter(x=>x.c!==col.di&&x.c!==col.pi&&x.c!==col.bi&&x.c!==col.ui);
+    if(col.ei<0&&outCandidates.length)col.ei=outCandidates[0].c;
+    if(col.pi<0){const alt=outCandidates.find(x=>x.c!==col.ei); if(alt)col.pi=alt.c;}
+    return col;
+  };
+
+  for(const name of wb.SheetNames){
+    const sh=wb.Sheets[name];
+    const mat=window.XLSX.utils.sheet_to_json(sh,{header:1,defval:'',raw:true});
+    if(!mat.length)continue;
+    for(const rr of mat){for(const vv of(rr||[])){const tv=clean(vv instanceof Date?excelDate(vv):String(vv??''));if(tv)allText.push(tv);}}
+
+    const head=findExcelHeader(mat);
+    if(head){
+      sheets++; headerFound++; if(head.col.inferred)usedFallback++;
+      let col={...head.col};
+      findAmountColumns(mat,head.r+Math.max(head.span,1),col);
+      let lastDate='';
+      for(let i=head.r+Math.max(head.span,1);i<mat.length;i++){
+        const r=mat[i]||[];
+        let tanggal=col.di>=0?excelDate(r[col.di]):'';
+        if(tanggal&&!/^\d{2}-\d{2}-\d{4}$/.test(tanggal))tanggal=normalizeDate(tanggal);
+        if(!tanggal&&lastDate)tanggal=lastDate; else if(tanggal)lastDate=tanggal;
+        let noBukti=col.bi>=0?normalizeNoBukti(r[col.bi]):'';
+        let uraian=col.ui>=0?sanitizeUraian(r[col.ui]):'';
+        let pengeluaran=col.ei>=0?parseMoney(r[col.ei]):0;
+        let penerimaan=col.pi>=0?parseMoney(r[col.pi]):0;
+        let source=`sheet ${name}`;
+        const joined=clean(r.map(v=>v instanceof Date?excelDate(v):String(v??'')).join(' | '));
+        const legacy=recoverLegacy(joined);
+        if(legacy){
+          noBukti=noBukti||legacy.noBukti; uraian=uraian||legacy.uraian;
+          if(pengeluaran<=0)pengeluaran=legacy.pengeluaran;
+          if(penerimaan<=0)penerimaan=legacy.penerimaan;
+          if(!tanggal) tanggal=normalizeDate(joined);
+          if(legacy.pengeluaran>0 || legacy.uraian)source+=' • dipulihkan';
+        }
+        if(!uraian){
+          const candidates=r.map((v,c)=>({v,c,t:clean(v)})).filter(x=>x.t&&x.c!==col.di&&x.c!==col.ei&&x.c!==col.pi&&x.c!==col.bi&&nonNumericText(x.v));
+          candidates.sort((a,b)=>b.t.length-a.t.length); if(candidates[0])uraian=sanitizeUraian(candidates[0].t);
+        }
+        if(!tanggal||!uraian){ignored++;continue;}
+        if(pengeluaran<=0){income+=Math.max(0,penerimaan);ignored++;continue;}
+        if(!isValidNoBukti(noBukti))missingEvidence++;
+        rows.push({tanggal,noBukti,uraian,pengeluaran,penerimaan,confidence:legacy?.pengeluaran?0.92:(isValidNoBukti(noBukti)?0.99:(col.inferred?0.78:0.88)),source});
+      }
+      continue;
+    }
+
+    // Header tidak ditemukan: fallback per baris berdasarkan pola isi.
+    usedFallback++;
+    const maxCols=Math.max(0,...mat.map(r=>(r||[]).length));
+    for(let i=0;i<mat.length;i++){
+      const r=mat[i]||[]; const vals=rowValues(r);
+      const tanggalVal=vals.find(x=>x.date)?.v;
+      const tanggal=tanggalVal!==undefined?excelDate(tanggalVal):'';
+      if(!tanggal)continue;
+      const noBuktiVal=vals.find(x=>/^(?:BPU|BNU)\s*[-./]?\s*\d+$/i.test(x.t))?.t||vals.find(x=>noBuktiRe.test(x.t))?.t||'';
+      const noBukti=normalizeNoBukti(noBuktiVal);
+      const numeric=vals.filter(x=>x.num>0 && (typeof x.v==='number'||/^[0-9][0-9.,()\s]*$/.test(x.t))).map(x=>({c:x.c,n:x.num}));
+      if(!numeric.length)continue;
+      // Dalam BKU yang tidak memiliki header, nilai terbesar/dua nilai terakhir umumnya adalah pengeluaran/saldo.
+      const ordered=[...numeric].sort((a,b)=>a.c-b.c);
+      let pengeluaran=ordered.length>=2?ordered[ordered.length-2].n:ordered[ordered.length-1].n;
+      let penerimaan=ordered.length>=3?ordered[ordered.length-3].n:0;
+      const textCells=vals.filter(x=>x.text).map(x=>x.t).filter(t=>!/^(?:jumlah|total|saldo|tanggal|tgl|uraian|keterangan|penerimaan|pengeluaran)$/i.test(t));
+      const uraian=sanitizeUraian(textCells.sort((a,b)=>b.length-a.length)[0]||'');
+      if(!uraian||pengeluaran<=0)continue;
+      if(!isValidNoBukti(noBukti))missingEvidence++;
+      rows.push({tanggal,noBukti,uraian,pengeluaran,penerimaan,confidence:0.68,source:`sheet ${name} • mode pola isi`});
+    }
+    sheets++;
+  }
+
+  const ei={};
+  for(const t of allText){
+    if(/^NPSN\b/i.test(t))ei.npsn=extractNip(afterLabelValue(t,'NPSN\b')||t);
+    else if(/^Nama\s+Sekolah\b/i.test(t))ei.school=afterLabelValue(t,'Nama\s+Sekolah\b');
+    else if(/^Desa\/Kecamatan\b/i.test(t))ei.rawAddress=afterLabelValue(t,'Desa\/Kecamatan\b');
+    else if(/^(?:Kabupaten\s*\/\s*Kota)\b/i.test(t))ei.kabupaten=afterLabelValue(t,'Kabupaten\s*\/\s*Kota');
+    else if(/^Provinsi\b/i.test(t))ei.provinsi=afterLabelValue(t,'Provinsi\b');
+    else if(!ei.rawAddress&&/\b(?:Kecamatan|Kec\.)\s+Lebak\s+Wangi\b/i.test(t))ei.rawAddress=t;
+  }
+  const rawExpenseTotal=rows.reduce((sum,r)=>sum+(Number(r.pengeluaran)||0),0);
+  const warnings=[];
+  if(!headerFound)warnings.push('Header standar tidak ditemukan; mesin memakai pembacaan berdasarkan pola isi.');
+  if(usedFallback>0)warnings.push('Sebagian data dibaca dengan mode pemulihan. Periksa hasil transaksi sebelum membuat Surat Perintah.');
+  if(rows.length&&missingEvidence)warnings.push(`${missingEvidence} transaksi tidak memiliki No. Bukti BPU/BNU; transaksi tetap dipertahankan karena tanggal, uraian, dan nominal pengeluaran tersedia.`);
+  if(!rows.length)warnings.push('Tidak ada transaksi pengeluaran yang berhasil dibaca. Periksa apakah file berisi data BKU yang tersimpan sebagai tabel/worksheet.');
+  return {rows,declaredTotal:null,excludedIncome:income,pages:sheets,blocks:rows.length+ignored,ignoredRows:ignored,warnings,identity:finalizeBkuIdentity(ei),rawExpenseTotal,validation:{ok:rows.length>0,rawExpenseTotal,declaredTotal:null,missingEvidence,rule:'Tanggal + Uraian + Pengeluaran menjadi dasar transaksi. No. Bukti BPU/BNU opsional.'},validationRule:'Pembacaan Excel memakai header standar, pemulihan baris, dan fallback pola isi. No. Bukti BPU/BNU bukan syarat wajib.'};
+}
+
 /* ==================== SEGMEN 2 — PEMBUATAN SURAT PERINTAH ==================== */
 function dateToInput(s){
   const x=clean(s);
@@ -388,13 +597,22 @@ function groupRowsByBukti(rows){
 }
 function taxInfo(r){
   const u=clean(r?.uraian||'');
-  if(!/\b(?:pph|ppn|pajak)\b/i.test(u))return null;
-  const siplah=/siplah/i.test(u);
+  const amount=Math.max(0,Number(r?.pengeluaran)||0);
+  // Hanya catat pajak yang benar-benar tercatat sebagai pengeluaran (telah dibayarkan), bukan angka pajak nol/sekadar referensi.
+  if(!/\b(?:pph|ppn|pajak)\b/i.test(u) || amount<=0)return null;
+  const siplah=/\(\s*siplah\s*\)/i.test(u) || /siplah/i.test(u);
   const pph=u.match(/\bPPh\s*[^,;|\s]*/i), ppn=u.match(/\bPPN\b/i);
   const type=pph?clean(pph[0]).toUpperCase().replace(/\s+/g,' '):(ppn?'PPN':'Pajak');
-  return {row:r,siplah,type,amount:Math.max(0,Number(r?.pengeluaran)||0)};
+  return {row:r,siplah,type,amount};
 }
-function getTaxRows(){return (state.rawRows||[]).map(taxInfo).filter(Boolean);}
+function getTaxRows(rows=state.rawRows){return (Array.isArray(rows)?rows:[]).map(taxInfo).filter(Boolean);}
+function getTaxSummary(rows=state.rawRows){
+  const all=getTaxRows(rows);
+  const s=all.filter(x=>x.siplah), n=all.filter(x=>!x.siplah);
+  const siplahTotal=s.reduce((sum,x)=>sum+(Number(x.amount)||0),0);
+  const nonSiplahTotal=n.reduce((sum,x)=>sum+(Number(x.amount)||0),0);
+  return {siplahTotal,nonSiplahTotal,grandTotal:siplahTotal+nonSiplahTotal,count:all.length};
+}
 
 Object.assign(ns,{
   dateRe,noBuktiRe,leadingCodeRe,activityCodeRe,accountCodeRe,moneyTokenRe,moneyOnlyRe,
@@ -404,7 +622,7 @@ Object.assign(ns,{
   findPdfDateRows,buildPdfRowBands,isInternalMovement,maskMatches,getMoney3,
   afterLabelValue,extractNip,normalizeSchoolName,normalizeKecamatan,resolveBkuKecamatan,validateBkuKecamatan,extractKecamatanFromAddress,normalizeBkuAddress,
   roleSignature,extractPdfIdentityPage,extractPdfSignatures,finalizeBkuIdentity,applyIdentityToSurat,resetAutoIdentity,
-  readPdf,excelDate,recoverLegacy,readExcel,
-  groupRowsByBukti,taxInfo,getTaxRows,dateToInput,dateDisplay
+  readPdf,detectPdfColumns,excelDate,recoverLegacy,readExcel,
+  groupRowsByBukti,taxInfo,getTaxRows,getTaxSummary,dateToInput,dateDisplay
 });
 })(window.SPMU=window.SPMU||{});

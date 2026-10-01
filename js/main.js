@@ -2,8 +2,20 @@
 'use strict';
 const {$,state,SURAT_FIELD_KEYS,suratElement,resetAutoIdentity,render,setTab}=ns;
 
-$('fileInput').addEventListener('change',e=>{ns.detachActiveProject?.();state.file=e.target.files?.[0]||null;state.rows=[];state.rawRows=[];state.result=null;state.surat.bukti='';state.surat.rowIndex=-1;state.surat.kepada='';state.surat.untukPembayaran='';state.suratByBukti={};resetAutoIdentity();$('readBtn').disabled=!state.file;$('status').textContent=state.file?`File dipilih: ${state.file.name}. Tekan BACA DATA untuk menjalankan MR. LOADING.`:'Siap. Pilih dokumen BKU.';ns.disableSuratSection();render();});
+const workspaceShell=document.querySelector('.workspace-shell');
+const setSidebarCollapsed=(collapsed)=>{
+  workspaceShell?.classList.toggle('sidebar-collapsed',!!collapsed);
+  const reopen=$('sidebarReopen');
+  if(reopen)reopen.setAttribute('aria-hidden',collapsed?'false':'true');
+  const toggle=$('sidebarToggle');
+  if(toggle)toggle.setAttribute('aria-label',collapsed?'Buka sidebar':'Sembunyikan sidebar');
+};
+$('sidebarToggle')?.addEventListener('click',()=>setSidebarCollapsed(!workspaceShell?.classList.contains('sidebar-collapsed')));
+$('sidebarReopen')?.addEventListener('click',()=>setSidebarCollapsed(false));
+$('tabDashboardBtn')?.addEventListener('click',()=>{setTab('dashboard');ns.renderDashboard?.();});
 $('tabBkuBtn').addEventListener('click',()=>{setTab('bku');ns.markProjectDirty?.();});
+$('fileInput').addEventListener('change',e=>{ns.detachActiveProject?.();state.file=e.target.files?.[0]||null;state.category='';if($('categorySelect'))$('categorySelect').value='';state.rows=[];state.rawRows=[];state.result=null;state.surat.bukti='';state.surat.rowIndex=-1;state.surat.kepada='';state.surat.untukPembayaran='';state.suratByBukti={};resetAutoIdentity();$('readBtn').disabled=!state.file;$('status').textContent=state.file?`File dipilih: ${state.file.name}. Tekan BACA DATA untuk menjalankan MR. LOADING.`:'Siap. Pilih dokumen BKU.';ns.disableSuratSection();render();});
+$('categorySelect')?.addEventListener('change',e=>{state.category=String(e.target.value||'');if(state.surat?.rowIndex>=0){ns.captureCurrentSuratDraft?.();}ns.markProjectDirty?.();});
 $('tabSuratBtn').addEventListener('click',()=>{if(!$('tabSuratBtn').disabled){ns.readSuratFields();setTab('surat');ns.renderSurat();}});
 $('tabPajakBtn').addEventListener('click',()=>{if(!$('tabPajakBtn').disabled){setTab('pajak');ns.renderTaxes();}});
 $('searchRows').addEventListener('input',e=>{state.search=e.target.value||'';render();ns.scheduleProjectAutoSave?.();});
@@ -54,9 +66,11 @@ $('suratLogoSekolah').addEventListener('change',async e=>{
 });
 $('suratTandaTangan').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file){state.surat.tandaTangan='';ns.renderSurat();return;}const reader=new FileReader();reader.onload=()=>{state.surat.tandaTangan=String(reader.result||'');ns.renderSurat();ns.scheduleProjectAutoSave?.();};reader.readAsDataURL(file);});
 $('suratTandaTanganBendahara').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file){state.surat.tandaTanganBendahara='';ns.renderSurat();return;}const reader=new FileReader();reader.onload=()=>{state.surat.tandaTanganBendahara=String(reader.result||'');ns.renderSurat();ns.scheduleProjectAutoSave?.();};reader.readAsDataURL(file);});
-$('clearBtn').addEventListener('click',()=>{ns.detachActiveProject?.();state.file=null;state.rows=[];state.rawRows=[];state.result=null;state.search='';state.surat.bukti='';state.surat.rowIndex=-1;state.surat.kepada='';state.surat.untukPembayaran='';state.suratByBukti={};state.surat.tandaTangan='';state.surat.tandaTanganBendahara='';state.surat.logoSekolah='';resetAutoIdentity();$('suratTandaTangan').value='';$('suratTandaTanganBendahara').value='';$('suratLogoSekolah').value='';if($('logoSekolahStatus'))$('logoSekolahStatus').textContent='Belum ada logo sekolah. Pilih file PNG untuk menampilkannya di sisi kanan kop surat.';$('searchRows').value='';$('fileInput').value='';['suratUraian','suratUntukPembayaran'].forEach(id=>{const el=$(id);if(el)el.value='';});$('status').textContent='Siap. Pilih dokumen BKU lalu tekan BACA DATA.';ns.disableSuratSection();render();});
+$('clearBtn').addEventListener('click',()=>{ns.detachActiveProject?.();state.file=null;state.category='';if($('categorySelect'))$('categorySelect').value='';state.rows=[];state.rawRows=[];state.result=null;state.search='';state.surat.bukti='';state.surat.rowIndex=-1;state.surat.kepada='';state.surat.untukPembayaran='';state.suratByBukti={};state.surat.tandaTangan='';state.surat.tandaTanganBendahara='';state.surat.logoSekolah='';resetAutoIdentity();$('suratTandaTangan').value='';$('suratTandaTanganBendahara').value='';$('suratLogoSekolah').value='';if($('logoSekolahStatus'))$('logoSekolahStatus').textContent='Belum ada logo sekolah. Pilih file PNG untuk menampilkannya di sisi kanan kop surat.';$('searchRows').value='';$('fileInput').value='';['suratUraian','suratUntukPembayaran'].forEach(id=>{const el=$(id);if(el)el.value='';});$('status').textContent='Siap. Pilih dokumen BKU lalu tekan BACA DATA.';ns.disableSuratSection();render();});
 resetAutoIdentity();
+setTab('dashboard');
 render();
+ns.renderDashboard?.();
 ns.disableSuratSection();
 ns.initProjectStore?.();
 })(window.SPMU=window.SPMU||{});

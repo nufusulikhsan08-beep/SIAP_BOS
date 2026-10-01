@@ -157,6 +157,7 @@ async function deleteProject(id){
   }catch(_){/* fallback */}
   try{deleteFallback(id);deleted=true}catch(_){ }
   if(!deleted)throw new Error('Gagal menghapus pekerjaan.');
+  ns.renderDashboard?.();
 }
 
 function activeTabName(){
@@ -178,7 +179,8 @@ function cloneState(){
     surat:ns.state?.surat||null,
     suratByBukti:ns.state?.suratByBukti||{},
     search:String(ns.state?.search||''),
-    activeTab:activeTabName()
+    activeTab:activeTabName(),
+    category:String(ns.state?.category||'')
   };
   // Force a plain JSON-compatible snapshot so IndexedDB never receives live/cyclic objects.
   try{return JSON.parse(JSON.stringify(state))}catch(e){throw new Error('Data pekerjaan tidak dapat diserialisasi untuk disimpan: '+(e?.message||e))}
@@ -245,7 +247,7 @@ async function putProject(name,id){
   const result=await writeProject(payload);
   activeProjectId=payload.id;
   activeProjectName=payload.name;
-  markSaved(payload,result.backend);
+  markSaved(payload,result.backend);ns.renderDashboard?.();
   return payload;
 }
 
@@ -321,6 +323,7 @@ async function loadProject(id){
   if(!blob&&p.file?.dataUrl)blob=await dataUrlToBlob(p.file.dataUrl,p.file.type);
   if(!blob)throw new Error('File BKU pada pekerjaan ini tidak ditemukan.');
   const s=p.state||{};
+  ns.state.category=String(s.category||'');
   ns.state.file=new File([blob],p.file.name||'BKU',{type:p.file.type||blob.type||'application/octet-stream',lastModified:p.file.lastModified||Date.now()});
   ns.state.rows=Array.isArray(s.rows)?s.rows:[];
   ns.state.rawRows=Array.isArray(s.rawRows)?s.rawRows:[];
@@ -340,6 +343,7 @@ async function loadProject(id){
   ns.state.search=String(s.search||'');
   activeProjectId=p.id;activeProjectName=p.name||'';
   if(q('searchRows'))q('searchRows').value=ns.state.search;
+  if(q('categorySelect'))q('categorySelect').value=ns.state.category||'';
   if(q('status'))q('status').textContent=`Pekerjaan dibuka: ${p.name}. File BKU dan hasil kerja telah dipulihkan.`;
   if(q('readBtn'))q('readBtn').disabled=!ns.state.file;
   if(ns.state.result&&ns.state.rows.length){
@@ -417,7 +421,7 @@ async function importProjectFile(file){
   const blob=await dataUrlToBlob(p.file.dataUrl,p.file.type);
   const payload={id:p.id||('p_'+Date.now()),name:p.name||'Pekerjaan BKU',createdAt:p.createdAt||Date.now(),updatedAt:Date.now(),version:3,file:{name:p.file.name||'BKU',type:p.file.type||'',size:p.file.size||blob.size,lastModified:p.file.lastModified||Date.now(),blob},state:p.state||{}};
   await writeProject(payload);
-  activeProjectId=payload.id;activeProjectName=payload.name;markSaved(payload,'Import .SPMU');await loadProject(payload.id);return payload;
+  activeProjectId=payload.id;activeProjectName=payload.name;markSaved(payload,'Import .SPMU');await loadProject(payload.id);ns.renderDashboard?.();return payload;
 }
 
 async function initProjectStore(){
@@ -452,11 +456,12 @@ async function initProjectStore(){
     catch(_){setSaveStatus('⚠ Penyimpanan browser diblokir','error')}
   }
   await renderProjectList();
+  ns.renderDashboard?.();
 }
 
 Object.assign(ns,{
   initProjectStore,showProjectDialog,closeProjectDialog,loadProject,saveCurrentFromUi,saveActiveProjectNow,
   markProjectDirty:markDirty,scheduleProjectAutoSave:scheduleAutoSave,scheduleAutoSave,
-  getActiveProjectId:()=>activeProjectId,detachActiveProject,importProjectFile
+  getActiveProjectId:()=>activeProjectId,getAllProjects,detachActiveProject,importProjectFile
 });
 })(window.SPMU=window.SPMU||{});

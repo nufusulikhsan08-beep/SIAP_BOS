@@ -16,14 +16,43 @@
 </head>
 <body>
 <div class="app">
-<section class="card hero"><div class="top"><div><div class="eyebrow">ARKAS • FINANCIAL DOCUMENT TOOL</div><h1 class="title">APLIKASI PENGELOLAAN BKU, SURAT PERINTAH &amp; HITUNG PAJAK</h1><div class="muted">Ekstrak dan validasi BKU, buat Surat Perintah Mengeluarkan Uang (SPMU) secara otomatis, lalu periksa transaksi pajak dalam satu aplikasi.</div><div class="creator">Dikembangkan oleh <strong>MR. LOADING</strong></div></div><span class="badge">✦ PORTABLE • TANPA INSTALASI</span></div><div class="steps"><span class="step"><i>1</i> Pilih dokumen BKU</span><span class="step"><i>2</i> Ekstrak & validasi BKU</span><span class="step"><i>3</i> Periksa hasil ekstraksi</span><span class="step"><i>4</i> Buat Surat Perintah</span><span class="step"><i>5</i> Cetak / PDF A4</span></div></section>
-<div class="tabs" role="tablist" aria-label="Modul aplikasi">
-<button id="tabBkuBtn" class="tab-btn active" type="button" role="tab" aria-selected="true">1. EKSTRAKSI BKU</button>
-<button id="tabSuratBtn" class="tab-btn locked" type="button" role="tab" aria-selected="false" disabled>2. SURAT PERINTAH 🔒</button><button id="tabPajakBtn" class="tab-btn locked" type="button" role="tab" aria-selected="false" disabled>3. HITUNG PAJAK 🔒</button>
+<div class="workspace-shell">
+<aside class="app-sidebar" id="appSidebar">
+  <div class="sidebar-collapsed-title" aria-hidden="true">FORSITAS KECAMATAN LEBAK WANGI</div>
+  <div class="sidebar-head"><div class="sidebar-brand">SPMU</div><button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="Sembunyikan sidebar">☰</button></div>
+  <div class="sidebar-label">NAVIGASI</div>
+  <nav class="sidebar-nav" role="tablist" aria-label="Modul aplikasi">
+    <button id="tabDashboardBtn" class="side-btn active" type="button" role="tab" aria-selected="true"><span class="side-icon">▦</span><span>Dashboard</span></button>
+    <button id="tabBkuBtn" class="side-btn" type="button" role="tab" aria-selected="false"><span class="side-icon">1</span><span>EKSTRAKSI BKU</span></button>
+    <button id="tabSuratBtn" class="side-btn locked" type="button" role="tab" aria-selected="false" disabled><span class="side-icon">2</span><span>SURAT PERINTAH</span></button>
+    <button id="tabPajakBtn" class="side-btn locked" type="button" role="tab" aria-selected="false" disabled><span class="side-icon">3</span><span>HITUNG PAJAK</span></button>
+  </nav>
+  <div class="sidebar-foot">SPMU OTOMATIS<br><small>Panel kerja terpadu</small></div>
+</aside>
+<button id="sidebarReopen" class="sidebar-reopen" type="button" aria-label="Buka sidebar" title="Buka sidebar">☰</button>
+<main class="workspace-main">
+<div id="tabDashboard" class="tab-panel active dashboard-group" role="tabpanel">
+  <section class="card hero"><div class="top"><div><div class="eyebrow">ARKAS • FINANCIAL DOCUMENT TOOL</div><h1 class="title">APLIKASI PENGELOLAAN BKU, SURAT PERINTAH &amp; HITUNG PAJAK</h1><div class="muted">Ekstrak dan validasi BKU, buat Surat Perintah Mengeluarkan Uang (SPMU) secara otomatis, lalu periksa transaksi pajak dalam satu aplikasi.</div><div class="creator">Dikembangkan oleh <strong>MR. LOADING</strong></div></div><span class="badge">✦ PORTABLE • TANPA INSTALASI</span></div><div class="steps"><span class="step"><i>1</i> Pilih dokumen BKU</span><span class="step"><i>2</i> Ekstrak &amp; validasi BKU</span><span class="step"><i>3</i> Periksa hasil ekstraksi</span><span class="step"><i>4</i> Buat Surat Perintah</span><span class="step"><i>5</i> Cetak / PDF A4</span></div></section>
+  <section class="dashboard-hero card">
+    <div><div class="eyebrow">RINGKASAN PEKERJAAN TERSIMPAN</div><h2>Dashboard SPMU</h2><p>Rekap otomatis dari seluruh SPMU yang sudah disimpan di Tab SURAT PERINTAH.</p></div>
+    <button id="dashboardRefreshBtn" class="btn secondary" type="button">↻ Refresh</button>
+  </section>
+  <section class="dashboard-metrics">
+    <div class="dash-metric"><span>Total SPMU Tersimpan</span><b id="dashProjectCount">0</b></div>
+    <div class="dash-metric"><span>Belanja Modal</span><b id="dashModalTotal">Rp 0</b></div>
+    <div class="dash-metric"><span>Belanja Operasional</span><b id="dashOperasionalTotal">Rp 0</b></div>
+    <div class="dash-metric"><span>Jumlah Pajak</span><b id="dashTaxTotal">Rp 0</b></div>
+  </section>
+  <section class="card dashboard-view-controls"><div><div class="section-title">Kategori Belanja</div><div class="section-sub">Pilih tampilan grafik dinamis atau rekap angka per kategori.</div></div><div class="view-switch" role="group" aria-label="Tampilan kategori belanja"><button type="button" class="view-switch-btn active" data-view="chart">▥ Grafik</button><button type="button" class="view-switch-btn" data-view="data">▤ Data</button></div></section>
+  <section id="categoryChartView" class="dashboard-grid">
+    <div class="card chart-card"><div class="toolbar"><div><div class="section-title">Belanja Modal</div><div class="section-sub">Peralatan dan Mesin • Aset Tetap Lainnya</div></div></div><div class="bar-chart" id="chartModal"></div></div>
+    <div class="card chart-card"><div class="toolbar"><div><div class="section-title">Belanja Operasional</div><div class="section-sub">Barang dan Jasa • Pegawai</div></div></div><div class="bar-chart" id="chartOperasional"></div></div>
+  </section>
+  <section id="categoryDataView" class="card dashboard-category-data" hidden><div class="table-wrap"><table class="data-table"><thead><tr><th>Kategori Belanja</th><th class="num">Jumlah (Rp)</th><th class="num">Proporsi</th></tr></thead><tbody id="categoryDataBody"></tbody></table></div></section>
+  <section class="card dashboard-detail"><div class="toolbar"><div><div class="section-title">Rekap Tersimpan</div><div class="section-sub">Setiap SPMU dihitung berdasarkan kategori dan nilai pembelanjaan yang dipilih saat SPMU disimpan.</div></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>No</th><th>Pekerjaan</th><th>Kategori</th><th class="num">Nilai Pengeluaran</th></tr></thead><tbody id="dashboardTableBody"><tr><td colspan="4" class="empty">Belum ada pekerjaan tersimpan.</td></tr></tbody></table></div></section>
 </div>
-<div id="tabBku" class="tab-panel active bku-group" role="tabpanel">
+<div id="tabBku" class="tab-panel bku-group" role="tabpanel">
 <section class="card"><div class="upload-head"><div class="upload-icon">⇧</div><div><div class="section-title">Impor dokumen BKU</div><div class="section-sub">Pilih berkas sumber untuk mulai mengekstrak transaksi.</div></div></div><div class="controls"><input id="fileInput" type="file" accept=".pdf,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"><button id="readBtn" class="btn primary" disabled>◈ &nbsp; BACA DATA</button><button id="saveProjectBtn" class="btn project-save-btn" type="button">💾 &nbsp; SIMPAN PEKERJAAN</button><button id="openProjectBtn" class="btn project-open-trigger" type="button">📂 &nbsp; BUKA PEKERJAAN</button><button id="exportBtn" class="btn success" disabled>⇩ &nbsp; EXPORT EXCEL</button><button id="clearBtn" class="btn secondary">↺ &nbsp; RESET</button></div><div class="project-save-row"><span id="projectSaveName">Belum ada pekerjaan tersimpan.</span><span id="projectSaveStatus" class="project-save-status">Penyimpanan lokal siap digunakan.</span></div><div class="hint" style="margin-top:12px">Format didukung: PDF, XLSX, dan XLS. <b>Hanya BKU Kecamatan Lebak Wangi</b> yang diterima. Baris dengan Pengeluaran &gt; 0 akan diproses, kecuali Tarik Tunai yang merupakan pemindahan dana internal.</div></section>
-<section class="card"><div class="toolbar" style="margin-bottom:13px"><div><div class="section-title">Ringkasan ekstraksi</div><div class="section-sub">Statistik akan diperbarui setelah dokumen dibaca.</div></div><span class="state-chip">● SIAP DIGUNAKAN</span></div><div class="grid"><div class="metric"><span>Dokumen</span><b id="mFile">—</b></div><div class="metric"><span>Halaman / Sheet</span><b id="mPages">0</b></div><div class="metric"><span>Transaksi keluar</span><b id="mRows">0</b></div><div class="metric"><span>Total pengeluaran</span><b id="mTotal">0</b></div><div class="metric"><span>Pemasukan diabaikan</span><b id="mIncome">0</b></div></div></section>
 <section class="card"><div class="toolbar"><div><div class="section-title">Pusat status & validasi</div><div class="section-sub">Informasi proses pembacaan dan peringatan hasil ekstraksi.</div></div><div class="small" id="sourceInfo">Belum ada file dibaca.</div></div><div id="status" class="status" style="margin-top:12px">Siap. Pilih dokumen lalu tekan BACA DATA.</div><div id="warnings"></div></section>
 <section class="card"><div class="toolbar"><div><div class="section-title">Versi 1 — Rincian Transaksi Pengeluaran (BPU/BNU Digabung)</div><div class="section-sub">Tetap menggunakan hasil penggabungan BPU/BNU seperti fitur lama. Periksa tanggal, nomor bukti, uraian, dan nominal sebelum ekspor.</div></div><input id="searchRows" class="search" type="search" placeholder="⌕  Cari uraian / nomor bukti..." aria-label="Cari transaksi"></div><div class="table-wrap result-table-wrap" style="margin-top:14px"><table class="data-table"><thead><tr><th>No</th><th>Tanggal</th><th>No. Bukti</th><th>Uraian</th><th class="num">Pengeluaran (Rp)</th></tr></thead><tbody id="tbody"><tr><td colspan="5" class="empty">Belum ada data. Impor dokumen untuk memulai.</td></tr></tbody></table></div><div class="hint" style="margin-top:11px">Catatan: data ditampilkan dalam kontainer yang dapat digulir supaya halaman aplikasi tetap ringkas. Uraian mengikuti teks sumber. BPU/BNU boleh kosong untuk transaksi PDF tertentu seperti Setor PPh/PPN dan Setor SIPLah.</div></section>
 <section class="card" id="rawExtractionSection">
@@ -64,6 +93,7 @@
 <div class="field"><label>Untuk Pembayaran <span class="manual-tag">INPUT MANUAL</span></label><textarea id="suratUntukPembayaran" placeholder="Tulis tujuan pembayaran secara manual sesuai kebutuhan surat perintah"></textarea></div>
 <div class="surat-draft-savebar"><div><b>Data SPMU per No. Bukti</b><div id="suratDraftSaveStatus" class="surat-draft-save-status">Belum ada data tersimpan untuk No. Bukti ini.</div></div><button id="suratSaveDataBtn" type="button" class="btn surat-save-data-btn">💾 Simpan Data SPMU</button></div>
 <div class="field"><label>Uraian <span class="auto-tag">VERSI 2 • DATA MURNI</span></label><textarea id="suratUraian" readonly placeholder="Uraian transaksi akan diambil dari data murni BKU"></textarea><div class="small">Di surat, uraian dirender sebagai kolom <b>No | Nama Barang / Kegiatan | Harga</b> dari data murni (tidak digabung).</div></div>
+<div class="category-field surat-category-field"><label for="categorySelect">Kategori Belanja <span class="required">*</span></label><select id="categorySelect" required><option value="">— Pilih kategori belanja —</option><option value="Belanja Modal : Peralatan dan Mesin">Belanja Modal : Peralatan dan Mesin</option><option value="Belanja Modal : Aset Tetap Lainya">Belanja Modal : Aset Tetap Lainya</option><option value="Belanja Operasional : Barang dan Jasa">Belanja Operasional : Barang dan Jasa</option><option value="Belanja Operasional : Pegawai">Belanja Operasional : Pegawai</option></select><div class="small">Wajib dipilih sebelum data SPMU ini dapat disimpan.</div></div>
 </div>
 </section>
 
@@ -139,6 +169,7 @@
 </div>
 <div class="footer">APLIKASI PENGELOLAAN BKU, SURAT PERINTAH &amp; HITUNG PAJAK • Dibuat oleh <b>MR. LOADING</b></div></div>
 
+</main></div>
 <div id="projectModal" class="project-modal" aria-hidden="true">
   <div class="project-modal-card" role="dialog" aria-modal="true" aria-labelledby="projectModalTitle">
     <div class="project-modal-head"><div><div id="projectModalTitle" class="project-modal-title">Pekerjaan Tersimpan</div><div id="projectModalSubtitle" class="project-modal-subtitle">Data disimpan hanya pada browser/perangkat ini.</div></div><button id="projectModalClose" class="project-modal-close" type="button" aria-label="Tutup">×</button></div>
@@ -181,7 +212,9 @@
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(!window.pdfjsLib){document.write('<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"><\/script>');}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>if(!window.XLSX){document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');}</script>
 <script src="js/core.js"></script>
 <script src="js/bku-parser.js"></script>
 <script src="js/surat.js"></script>
@@ -190,6 +223,7 @@
 <script src="js/surat-viewer.js"></script>
 <script src="js/export.js"></script>
 <script src="js/project-store.js"></script>
+<script src="js/dashboard.js"></script>
 <script src="js/main.js"></script>
 
 </body></html>

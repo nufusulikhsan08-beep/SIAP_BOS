@@ -34,6 +34,8 @@ function captureCurrentSuratDraft(){
     bukti:state.rows[idx]?.noBukti||d.bukti||'',
     kepada:String(elK?.value??d.kepada??''),
     untukPembayaran:String(elU?.value??d.untukPembayaran??''),
+    category:String(state.category||''),
+    nominal:Math.max(0,Number(state.rows[idx]?.pengeluaran)||0),
     savedAt:Date.now()
   };
   ensureSuratDraftStore()[suratDraftKey(idx)]=draft;
@@ -49,6 +51,9 @@ function restoreSuratDraft(index){
   const untuk=draft?.untukPembayaran??'';
   state.surat.kepada=kepada;
   state.surat.untukPembayaran=untuk;
+  state.category=String(draft?.category||'');
+  const categoryEl=$('categorySelect');
+  if(categoryEl)categoryEl.value=state.category;
   if(k)k.value=kepada;
   if(u)u.value=untuk;
   updateSuratDraftStatus();
@@ -67,6 +72,7 @@ function updateSuratDraftStatus(message){
 async function saveCurrentSuratData(){
   if(!state.file){window.alert('Pilih/upload BKU terlebih dahulu.');return false;}
   if(!state.rows.length){window.alert('Baca data BKU terlebih dahulu.');return false;}
+  if(!String(state.category||'').trim()){window.alert('Pilih Kategori Belanja terlebih dahulu untuk menyimpan SPMU ini.');$('categorySelect')?.focus();return false;}
   readSuratFields();
   const draft=captureCurrentSuratDraft();
   if(!draft)return false;
@@ -109,16 +115,38 @@ function suratDataForIndex(index){
   const r=Number.isInteger(i)&&i>=0&&i<state.rows.length?state.rows[i]:null;
   const d={...state.surat};
   const draft=getSuratDraft(i);
-  if(draft){d.kepada=String(draft.kepada||'');d.untukPembayaran=String(draft.untukPembayaran||'');d.bukti=draft.bukti||r?.noBukti||'';}
-  const raw=r?((state.rawRows||[]).filter(x=>{const key=normalizeNoBukti(r.noBukti||'');return key?normalizeNoBukti(x.noBukti||'')===key:(x.tanggal===r.tanggal&&clean(x.uraian)===clean(r.uraian));})):[];
+  if(draft){
+    d.kepada=String(draft.kepada||'');
+    d.untukPembayaran=String(draft.untukPembayaran||'');
+    d.bukti=draft.bukti||r?.noBukti||'';
+  }
+  d.category=String(draft?.category ?? state.category ?? '');
+  const raw=r?((state.rawRows||[]).filter(x=>{const key=normalizeNoBukti(r.noBukti||'');return key?normalizeNoBukti(x.noBukti||'')===key:(x.tanggal===r.tanggal&&clean(x.uraian)===clean(r.uraian));})):[ ];
   const rawItems=raw.length?raw:(r?[r]:[]);
-  return {...d,bukti:r?.noBukti||d.bukti||'',tanggal:r?.tanggal||d.tanggal,uraian:rawItems.map(x=>clean(x.uraian)).filter(Boolean).join('; '),rawItems,nominal:r?.pengeluaran||0,kepada:d.kepada||'',untukPembayaran:d.untukPembayaran||''};
+  return {...d,bukti:r?.noBukti||d.bukti||'',tanggal:r?.tanggal||d.tanggal,uraian:rawItems.map(x=>clean(x.uraian)).filter(Boolean).join('; '),rawItems,nominal:r?.pengeluaran||0,kepada:d.kepada||'',untukPembayaran:d.untukPembayaran||'',category:d.category};
 }
-function decorateSuratPages(pages,noBku){
+function decorateSuratPages(pages,noBku,category){
   const allPages=[...pages.querySelectorAll('.surat-page')];
-  allPages.forEach((pg,i)=>{const foot=pg.querySelector('.surat-page-footer');if(foot)foot.innerHTML=`<span class="sf-page">Halaman ${i+1} dari ${allPages.length}</span>`;});
+  const bku=clean(noBku||'-')||'-';
+  const cat=clean(category||'-')||'-';
+  allPages.forEach((pg,i)=>{
+    let foot=pg.querySelector('.surat-page-footer');
+    if(!foot){
+      foot=document.createElement('div');
+      foot.className='surat-page-footer';
+      pg.appendChild(foot);
+    }
+    foot.innerHTML=`<span class="sf-bku">NO BKU: ${esc(bku)}</span><span class="sf-category">Kategori Belanja: ${esc(cat)}</span><span class="sf-page">Halaman ${i+1} dari ${allPages.length}</span>`;
+  });
   const firstPage=allPages[0];
-  if(firstPage){const box=document.createElement('div');box.className='surat-bku-box';box.textContent=clean(noBku||'-')||'-';firstPage.appendChild(box);}
+  if(firstPage){
+    const oldBox=firstPage.querySelector('.surat-bku-box');
+    if(oldBox)oldBox.remove();
+    const box=document.createElement('div');
+    box.className='surat-bku-box';
+    box.textContent=bku;
+    firstPage.appendChild(box);
+  }
   return pages;
 }
 function buildSuratPagesForIndex(index){
@@ -543,7 +571,7 @@ function renderSurat(){
 
   const blocks=buildSuratBlocks(d,num,dateText,tandaTangan,logoSekolah,logoKabupaten);
   const pages=paginateSurat(blocks);
-  decorateSuratPages(pages,clean(d.bukti||'')||'-');
+  decorateSuratPages(pages,clean(d.bukti||'')||'-',clean(d.category||'')||'-');
 
   $('suratPreview').innerHTML='';
   $('suratPreview').appendChild(pages);
