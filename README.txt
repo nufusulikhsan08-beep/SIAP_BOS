@@ -164,3 +164,22 @@ PERBAIKAN CRITICAL - 1 OKTOBER 2026
 - Dampak bug sebelumnya: render awal gagal -> inisialisasi Project Store tidak pernah selesai -> tombol BUKA PEKERJAAN tidak mendapat event handler -> proses BACA DATA juga berhenti saat render dipanggil.
 - Layout Dashboard/sidebar dan fitur yang sudah ada dipertahankan; perbaikan hanya pada kompatibilitas render dengan layout FIXED.
 - Mesin ekstraksi PDF/Excel versi FIXED tetap dipertahankan sebagai dasar, bukan diganti dengan layout atau implementasi dari SPMU_OTOMATIS_V2-main.
+
+
+PERBAIKAN AKURASI EKSTRAKSI - 1 OKTOBER 2026
+PDF
+- Batas kolom: bila header terdeteksi masih berada di dalam kolom baku, geometri baku dipakai. Sebelumnya batas dihitung
+  di titik tengah antar-header sehingga kolom Uraian (lebar) terpotong dan sebagian teksnya masuk ke kolom Penerimaan.
+- Uraian multi-baris pada transaksi pertama/terakhir tiap halaman tidak lagi terpotong (batas data = header tabel s.d. baris Jumlah).
+- Tanggal dan angka DI DALAM uraian tidak lagi dihapus (mis. "periode 01-01-2026 s.d. 31-01-2026", "2.500 lembar").
+  Hanya metadata di awal teks (tanggal, BPU/BNU, kode) yang dibuang.
+- Validasi total sekarang juga per halaman: peringatan menyebut halaman mana yang selisih.
+- Pembaca PDF kini hanya satu (readPdf di bku-parser.js); salinan di bku-ui.js dihapus agar perbaikan tidak perlu ganda.
+EXCEL
+- Kolom "Kode Kegiatan"/"Kode Rekening" tidak lagi salah dipetakan sebagai Uraian (kata "kegiatan" hanya cadangan terakhir).
+- Baris Jumlah/Total/Saldo tidak lagi masuk sebagai transaksi dan tidak lagi mewarisi tanggal baris sebelumnya.
+- Tarik Tunai dikeluarkan di Excel, sama seperti PDF.
+- Pemulihan teks gabungan tidak lagi menimpa nominal pada file dengan header jelas (mencegah baris Penerimaan berubah jadi Pengeluaran).
+- Angka murni (mis. 250000) tidak lagi dikira tanggal pada mode tanpa header.
+- Regex global dengan .test() (lastIndex) pada pencarian No. Bukti diperbaiki.
+File berubah: js/bku-parser.js, js/bku-ui.js, README.txt.
