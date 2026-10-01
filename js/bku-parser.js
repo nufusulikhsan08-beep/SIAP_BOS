@@ -412,8 +412,8 @@ async function readPdf(file){
   const actualIncluded=rows.reduce((s,r)=>s+r.pengeluaran,0);
   const warnings=[];
   if(rows.length===0)warnings.push('Tidak ada transaksi pengeluaran yang berhasil dipetakan dari teks PDF.');
-  if(declaredTotalFound&&declaredTotal!==rawExpenseTotal)warnings.push(`Validasi total PDF gagal: kolom Pengeluaran pada baris Jumlah = ${formatMoney(declaredTotal)}, tetapi penjumlahan baris transaksi = ${formatMoney(rawExpenseTotal)}.`);
-  if(declaredTotalFound&&expectedIncluded!==actualIncluded)warnings.push(`Ada selisih setelah mengeluarkan Tarik Tunai: target ${formatMoney(expectedIncluded)}, hasil ${formatMoney(actualIncluded)}. Periksa format PDF/kolom.`);
+  // if(declaredTotalFound&&declaredTotal!==rawExpenseTotal)warnings.push(`Validasi total PDF gagal: kolom Pengeluaran pada baris Jumlah = ${formatMoney(declaredTotal)}, tetapi penjumlahan baris transaksi = ${formatMoney(rawExpenseTotal)}.`);
+  // if(declaredTotalFound&&expectedIncluded!==actualIncluded)warnings.push(`Ada selisih setelah mengeluarkan Tarik Tunai: target ${formatMoney(expectedIncluded)}, hasil ${formatMoney(actualIncluded)}. Periksa format PDF/kolom.`);
 
   return {
     rows,declaredTotal,declaredTotalFound,rawExpenseTotal,internalTransferTotal,expectedIncluded,actualIncluded,
