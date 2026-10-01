@@ -4,14 +4,16 @@ const {$,state,SURAT_FIELD_KEYS,suratElement,resetAutoIdentity,render,setTab}=ns
 
 const workspaceShell=document.querySelector('.workspace-shell');
 const setSidebarCollapsed=(collapsed)=>{
-  workspaceShell?.classList.toggle('sidebar-collapsed',!!collapsed);
-  const reopen=$('sidebarReopen');
-  if(reopen)reopen.setAttribute('aria-hidden',collapsed?'false':'true');
+  const isCollapsed=!!collapsed;
+  workspaceShell?.classList.toggle('sidebar-collapsed',isCollapsed);
   const toggle=$('sidebarToggle');
-  if(toggle)toggle.setAttribute('aria-label',collapsed?'Buka sidebar':'Sembunyikan sidebar');
+  if(toggle){
+    toggle.setAttribute('aria-label',isCollapsed?'Buka sidebar':'Sembunyikan sidebar');
+    toggle.setAttribute('aria-expanded',String(!isCollapsed));
+    toggle.setAttribute('title',isCollapsed?'Buka sidebar':'Tutup sidebar');
+  }
 };
 $('sidebarToggle')?.addEventListener('click',()=>setSidebarCollapsed(!workspaceShell?.classList.contains('sidebar-collapsed')));
-$('sidebarReopen')?.addEventListener('click',()=>setSidebarCollapsed(false));
 $('tabDashboardBtn')?.addEventListener('click',()=>{setTab('dashboard');ns.renderDashboard?.();});
 $('tabBkuBtn').addEventListener('click',()=>{setTab('bku');ns.markProjectDirty?.();});
 $('fileInput').addEventListener('change',e=>{ns.detachActiveProject?.();state.file=e.target.files?.[0]||null;state.category='';if($('categorySelect'))$('categorySelect').value='';state.rows=[];state.rawRows=[];state.result=null;state.surat.bukti='';state.surat.rowIndex=-1;state.surat.kepada='';state.surat.untukPembayaran='';state.suratByBukti={};resetAutoIdentity();$('readBtn').disabled=!state.file;$('status').textContent=state.file?`File dipilih: ${state.file.name}. Tekan BACA DATA untuk menjalankan MR. LOADING.`:'Siap. Pilih dokumen BKU.';ns.disableSuratSection();render();});
