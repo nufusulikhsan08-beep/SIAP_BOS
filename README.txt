@@ -166,20 +166,23 @@ PERBAIKAN CRITICAL - 1 OKTOBER 2026
 - Mesin ekstraksi PDF/Excel versi FIXED tetap dipertahankan sebagai dasar, bukan diganti dengan layout atau implementasi dari SPMU_OTOMATIS_V2-main.
 
 
-PERBAIKAN AKURASI EKSTRAKSI - 1 OKTOBER 2026
-PDF
-- Batas kolom: bila header terdeteksi masih berada di dalam kolom baku, geometri baku dipakai. Sebelumnya batas dihitung
-  di titik tengah antar-header sehingga kolom Uraian (lebar) terpotong dan sebagian teksnya masuk ke kolom Penerimaan.
-- Uraian multi-baris pada transaksi pertama/terakhir tiap halaman tidak lagi terpotong (batas data = header tabel s.d. baris Jumlah).
-- Tanggal dan angka DI DALAM uraian tidak lagi dihapus (mis. "periode 01-01-2026 s.d. 31-01-2026", "2.500 lembar").
-  Hanya metadata di awal teks (tanggal, BPU/BNU, kode) yang dibuang.
-- Validasi total sekarang juga per halaman: peringatan menyebut halaman mana yang selisih.
-- Pembaca PDF kini hanya satu (readPdf di bku-parser.js); salinan di bku-ui.js dihapus agar perbaikan tidak perlu ganda.
-EXCEL
-- Kolom "Kode Kegiatan"/"Kode Rekening" tidak lagi salah dipetakan sebagai Uraian (kata "kegiatan" hanya cadangan terakhir).
-- Baris Jumlah/Total/Saldo tidak lagi masuk sebagai transaksi dan tidak lagi mewarisi tanggal baris sebelumnya.
-- Tarik Tunai dikeluarkan di Excel, sama seperti PDF.
-- Pemulihan teks gabungan tidak lagi menimpa nominal pada file dengan header jelas (mencegah baris Penerimaan berubah jadi Pengeluaran).
-- Angka murni (mis. 250000) tidak lagi dikira tanggal pada mode tanpa header.
-- Regex global dengan .test() (lastIndex) pada pencarian No. Bukti diperbaiki.
-File berubah: js/bku-parser.js, js/bku-ui.js, README.txt.
+UPDATE DASHBOARD — 1 OKTOBER 2026
+- Jumlah Pajak kini dijumlahkan dari SEMUA pekerjaan tersimpan (sebelumnya hanya BKU yang sedang terbuka), lengkap dengan rincian SIPLah dan Non SIPLah.
+- Ditambahkan keterangan waktu pembaruan dan jumlah pekerjaan pada header dashboard.
+- Tabel Rekap Tersimpan: kolom Tanggal Simpan, urutan terbaru di atas, dan baris Total.
+- Tabel kategori (tampilan Data): baris Total.
+- Teks ringkasan dan langkah di dashboard memuat fitur Kwitansi.
+- Hanya js/dashboard.js, index.html, dan styles.css yang diubah.
+
+DASHBOARD v2 — TAMPILAN BARU (1 Oktober 2026)
+- Banner dashboard biru tua, kartu metrik berwarna per kategori, grafik batang berwarna tegas, badge kategori, dan baris selang-seling pada tabel.
+- Ditambahkan bagan Komposisi Belanja (porsi 4 kategori dalam satu batang) beserta legenda persentase.
+- Perubahan pada js/dashboard.js, index.html, styles.css.
+
+UPDATE DASHBOARD v3 — TAMPILAN LEBIH MODERN
+- Header dashboard baru dengan indikator "live", waktu pembaruan, dan tombol Refresh bergaya modern.
+- 4 kartu KPI beraksen warna + ikon, menampilkan persentase Modal/Operasional terhadap total.
+- Komposisi Belanja kini berupa grafik donat dengan legenda persentase.
+- Tren Bulanan (6 bulan terakhir) dari tanggal simpan SPMU.
+- Kolom pencarian pada tabel Rekap Tersimpan (pekerjaan / kategori / no. bukti).
+- Hanya index.html (bagian dashboard), js/dashboard.js, dan styles.css (blok dx- di akhir file) yang berubah. Tab lain tidak terpengaruh.

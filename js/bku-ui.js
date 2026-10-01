@@ -129,9 +129,59 @@ async function extractBkuData(){
   }finally{$('readBtn').disabled=!state.file;render();}
 }
 
-/* Satu-satunya pembaca PDF ada di bku-parser.js (readPdf). Fungsi ini hanya meneruskan progress,
-   agar perbaikan parser tidak perlu dilakukan di dua tempat dan hasilnya selalu konsisten. */
-function readPdfWithProgress(file,onProgress){return readPdf(file,onProgress);}
+async function readPdfWithProgress(file,onProgress){
+  if(!window.pdfjsLib)throw new Error('Mesin PDF.js belum siap. Pastikan koneksi internet aktif saat pertama kali membuka aplikasi, lalu coba BACA DATA lagi.');
+  const buf=await file.arrayBuffer();
+  const pdf=await window.pdfjsLib.getDocument({data:buf,disableWorker:true}).promise;
+  // Ulangi pembacaan inti PDF sambil memberi progress per halaman.
+  const rows=[];const identity={school:"",kecamatan:"",alamat:"",rawAddress:"",npsn:"",headName:"",headNip:"",treasurerName:"",treasurerNip:"",kabupaten:"",provinsi:""};
+  let income=0,blocks=0,ignored=0,internalTransferTotal=0,rawExpenseTotal=0,declaredTotal=0,declaredTotalFound=0;
+  for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){
+    const page=await pdf.getPage(pageNo);
+    const viewport=page.getViewport({scale:1});
+    const c=await page.getTextContent();
+    const items=(c.items||[]).map(x=>({text:String(x.str||''),x:Number(x.transform?.[4]||0),y:Number(x.transform?.[5]||0),width:Number(x.width||0),height:Number(x.height||0)}));
+    const cols=detectPdfColumns(items,viewport.width);
+    const lines=groupPdfLines(items,2.5);
+    if(pageNo===1)Object.assign(identity,extractPdfIdentityPage(items));
+    const sig=extractPdfSignatures(items);
+    if(!identity.headName&&sig.headName)identity.headName=sig.headName;
+    if(!identity.headNip&&sig.headNip)identity.headNip=sig.headNip;
+    if(!identity.treasurerName&&sig.treasurerName)identity.treasurerName=sig.treasurerName;
+    if(!identity.treasurerNip&&sig.treasurerNip)identity.treasurerNip=sig.treasurerNip;
+    for(const line of lines){
+      if(/^Jumlah\b/i.test(lineText(line))){
+        const v=extractColumnMoney(line.items,cols.pengeluaran);
+        if(v>0||extractColumnText(line.items,cols.pengeluaran)==='0'){declaredTotal+=v;declaredTotalFound++;}
+      }
+    }
+    const dateRows=findPdfDateRows(items,cols);
+    const bands=buildPdfRowBands(items,dateRows);
+    blocks+=bands.length;
+    for(const band of bands){
+      const rowItems=band.rowItems;
+      const tanggal=band.tanggal;
+      const noBukti=normalizeNoBukti(extractColumnText(rowItems,cols.bukti));
+      const uraian=sanitizeUraian(extractColumnText(rowItems,cols.uraian));
+      const penerimaan=extractColumnMoney(rowItems,cols.penerimaan);
+      const pengeluaran=extractColumnMoney(rowItems,cols.pengeluaran);
+      const saldo=extractColumnMoney(rowItems,cols.saldo);
+      if(pengeluaran>0)rawExpenseTotal+=pengeluaran;
+      if(pengeluaran<=0){if(penerimaan>0)income+=penerimaan;ignored++;continue;}
+      if(isInternalMovement(uraian)){internalTransferTotal+=pengeluaran;ignored++;continue;}
+      if(!uraian){ignored++;continue;}
+      rows.push({tanggal,noBukti,uraian,penerimaan,pengeluaran,saldo,confidence:0.995,source:`halaman ${pageNo}`});
+    }
+    if(typeof onProgress==='function')onProgress(pageNo,pdf.numPages);
+  }
+  const expectedIncluded=declaredTotalFound?Math.max(0,declaredTotal-internalTransferTotal):0;
+  const actualIncluded=rows.reduce((s,r)=>s+r.pengeluaran,0);
+  const warnings=[];
+  if(rows.length===0)warnings.push('Tidak ada transaksi pengeluaran yang berhasil dipetakan dari teks PDF.');
+  if(declaredTotalFound&&declaredTotal!==rawExpenseTotal)warnings.push(`Validasi total PDF gagal: kolom Pengeluaran pada baris Jumlah = ${formatMoney(declaredTotal)}, tetapi penjumlahan baris transaksi = ${formatMoney(rawExpenseTotal)}.`);
+  if(declaredTotalFound&&expectedIncluded!==actualIncluded)warnings.push(`Ada selisih setelah mengeluarkan Tarik Tunai: target ${formatMoney(expectedIncluded)}, hasil ${formatMoney(actualIncluded)}. Periksa format PDF/kolom.`);
+  return {rows,declaredTotal,declaredTotalFound,rawExpenseTotal,internalTransferTotal,expectedIncluded,actualIncluded,excludedIncome:income,pages:pdf.numPages,blocks,ignoredRows:ignored,warnings,identity:finalizeBkuIdentity(identity),validation:{declaredTotal,declaredTotalFound,rawExpenseTotal,internalTransferTotal,expectedIncluded,actualIncluded,ok:declaredTotalFound?(declaredTotal===rawExpenseTotal&&expectedIncluded===actualIncluded):rows.length>0},validationRule:'Semua pengeluaran dari kolom PENGELUARAN dipertahankan, kecuali Tarik Tunai (pemindahan dana internal). Terima/pemasukan dan saldo diabaikan.'};
+}
 
 Object.assign(ns,{renderRawRows,renderTaxes,render,mrLoading,mrLoadingSuccess,mrLoadingError,extractBkuData,readPdfWithProgress});
 })(window.SPMU=window.SPMU||{});

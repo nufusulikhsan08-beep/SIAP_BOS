@@ -55,22 +55,7 @@ function parseMoney(s){
   const n=Number(raw); return Number.isFinite(n)?Math.round((negative?-1:1)*n):0;
 }
 function formatMoney(n){return Math.round(n||0).toLocaleString('id-ID');}
-function stripMetadata(s){
-  /* Hanya metadata di AWAL teks yang dibuang (tanggal, No. Bukti, kode). Tanggal/angka di dalam
-     isi uraian (mis. "periode 01-01-2026 s.d. 31-01-2026", "2.500 lembar") TIDAK boleh dihapus. */
-  let x=clean(s);
-  const lead=(re)=>{const r=new RegExp('^\\s*(?:'+re.source+')\\s*','i');return r;};
-  for(let i=0;i<4;i++){
-    const before=x;
-    x=x.replace(/^\s*[:;|,-]+\s*/,'');
-    x=x.replace(lead(/\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b|\b\d{1,2}[-/]\d{1,2}[-/]\d{4}\b|\b\d{1,2}\.\d{1,2}\.\d{4}\b/),'');
-    x=x.replace(lead(/\b(?:BPU|BNU)\s*[-./]?\s*\d+\b/),'');
-    x=x.replace(/^\s*(?:kode\s+(?:kegiatan|rekening)\s*[:.-]?\s*)+/i,'');
-    x=x.replace(/^\s*(?:(?:\d{1,2}\.){2,10}\d{1,4}\.?\s+)+/,'');
-    if(x===before)break;
-  }
-  return clean(x);
-}
+function stripMetadata(s){let x=clean(s);x=x.replace(dateRe,' ');x=x.replace(noBuktiRe,' ');x=x.replace(/^\s*[:;|,-]+\s*/,'');x=x.replace(/^\s*(?:kode\s+(?:kegiatan|rekening)\s*[:.-]?\s*)+/i,'');x=x.replace(leadingCodeRe,'');return clean(x);}
 function sanitizeUraian(s){let x=stripMetadata(s);x=x.replace(/^\s*[|:;,\-]+\s*/,'').replace(/\s*[|:;,]+\s*$/,'');return clean(x);}
 
 function pdfColumns(pageWidth){
@@ -149,12 +134,6 @@ function detectPdfColumns(items,pageWidth){
     if(score>bestScore){bestScore=score;Object.assign(found,local);}
   }
   if(bestScore<3)return fallback;
-  /* Header kolom biasanya DI TENGAH kolom, sedangkan lebar kolom tidak sama (Uraian jauh lebih lebar).
-     Memotong di titik tengah antar-header memindahkan sebagian Uraian ke Penerimaan dan memotong teks.
-     Bila semua header yang terdeteksi masih berada di dalam kolom baku, pakai batas baku. */
-  const tol=Math.max(6,(Number(pageWidth)||PDF_BASE_WIDTH)*0.012);
-  const consistent=Object.entries(found).every(([k,x])=>fallback[k]&&x>=fallback[k][0]-tol&&x<=fallback[k][1]+tol);
-  if(consistent)return fallback;
   const out={...fallback};
   const ordered=Object.entries(found).sort((a,b)=>a[1]-b[1]);
   for(const [key,x] of ordered){
@@ -180,10 +159,8 @@ function findPdfDateRows(items,cols){
   for(const row of rows){if(!ded.length||Math.abs(ded[ded.length-1].y-row.y)>1.5)ded.push(row);}
   return ded;
 }
-function buildPdfRowBands(items,dateRows,limits){
+function buildPdfRowBands(items,dateRows){
   const all=[...items];
-  const topLimit=Number.isFinite(limits?.top)?limits.top:null;      // y garis header tabel (batas atas area data)
-  const bottomLimit=Number.isFinite(limits?.bottom)?limits.bottom:null; // y baris Jumlah / penutup (batas bawah area data)
   const bands=[];
   for(let i=0;i<dateRows.length;i++){
     const y=dateRows[i].y;
@@ -191,8 +168,8 @@ function buildPdfRowBands(items,dateRows,limits){
     const nextY=i<dateRows.length-1?dateRows[i+1].y:null;
     // Antara dua tanggal terdapat satu visual baris. Garis kode rekening/nomor
     // yang wrap ke atas/bawah tetap dimasukkan dengan batas midpoint.
-    const top=prevY==null?(topLimit!=null?Math.max(y+8,topLimit-2):y+8):(prevY+y)/2;
-    const bottom=nextY==null?(bottomLimit!=null&&bottomLimit<y-8?bottomLimit+2:y-8):(y+nextY)/2;
+    const top=prevY==null?y+8:(prevY+y)/2;
+    const bottom=nextY==null?y-8:(y+nextY)/2;
     const rowItems=all.filter(it=>Number(it.y||0)<=top+0.6&&Number(it.y||0)>bottom-0.6);
     bands.push({tanggal:dateRows[i].tanggal,y,rowItems});
   }
@@ -331,13 +308,12 @@ function resetAutoIdentity(){
 }
 
 /* ==================== SEGMEN 1 — EKSTRAKSI & VALIDASI DATA BKU ==================== */
-async function readPdf(file,onProgress){
+async function readPdf(file){
   if(!window.pdfjsLib)throw new Error('Mesin PDF.js belum siap. Pastikan koneksi internet aktif saat pertama kali membuka aplikasi, lalu coba BACA DATA lagi.');
   const buf=await file.arrayBuffer();
   const pdf=await window.pdfjsLib.getDocument({data:buf,disableWorker:true}).promise;
   const rows=[];const identity={school:"",kecamatan:"",alamat:"",rawAddress:"",npsn:"",headName:"",headNip:"",treasurerName:"",treasurerNip:"",kabupaten:"",provinsi:""};
   let income=0,blocks=0,ignored=0,internalTransferTotal=0,rawExpenseTotal=0,declaredTotal=0,declaredTotalFound=0;
-  const pageWarnings=[];
 
   for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){
     const page=await pdf.getPage(pageNo);
@@ -362,25 +338,8 @@ async function readPdf(file,onProgress){
     }
 
     const dateRows=findPdfDateRows(items,cols);
-    // Batas area data: header tabel (atas) dan baris Jumlah/penutup (bawah).
-    let topLimit=null,bottomLimit=null;
-    if(dateRows.length){
-      const firstY=dateRows[0].y,lastY=dateRows[dateRows.length-1].y;
-      const headerLine=lines.find(l=>l.y>firstY&&/(?:pengeluaran|penerimaan|uraian)/i.test(lineText(l))&&!/^Jumlah\b/i.test(lineText(l)));
-      if(headerLine)topLimit=headerLine.y;
-      const endLine=[...lines].reverse().find(l=>l.y<lastY-1&&/^(?:Jumlah|Mengetahui|Menyetujui|Kepala\s+Sekolah|Bendahara|Saldo\s+(?:Kas|Buku|Akhir))/i.test(lineText(l)));
-      if(endLine)bottomLimit=endLine.y;
-    }
-    const bands=buildPdfRowBands(items,dateRows,{top:topLimit,bottom:bottomLimit});
+    const bands=buildPdfRowBands(items,dateRows);
     blocks+=bands.length;
-    const pageBefore={exp:rawExpenseTotal};
-    let pageDeclared=0,pageDeclaredFound=0;
-    for(const line of lines){
-      if(/^Jumlah\b/i.test(lineText(line))){
-        const v=extractColumnMoney(line.items,cols.pengeluaran);
-        if(v>0){pageDeclared=v;pageDeclaredFound=1;}
-      }
-    }
 
     for(const band of bands){
       const rowItems=band.rowItems;
@@ -401,17 +360,12 @@ async function readPdf(file,onProgress){
 
       rows.push({tanggal,noBukti,uraian,penerimaan,pengeluaran,saldo,confidence:0.995,source:`halaman ${pageNo}`});
     }
-    // Validasi per halaman agar halaman yang salah baca mudah ditemukan.
-    const pageSum=rawExpenseTotal-pageBefore.exp;
-    if(pageDeclaredFound&&pageSum!==pageDeclared)pageWarnings.push(`Halaman ${pageNo}: total Pengeluaran tercetak ${formatMoney(pageDeclared)}, hasil baca ${formatMoney(pageSum)} (selisih ${formatMoney(Math.abs(pageDeclared-pageSum))}).`);
-    if(typeof onProgress==='function')onProgress(pageNo,pdf.numPages);
   }
 
   const expectedIncluded=declaredTotalFound?Math.max(0,declaredTotal-internalTransferTotal):0;
   const actualIncluded=rows.reduce((s,r)=>s+r.pengeluaran,0);
   const warnings=[];
   if(rows.length===0)warnings.push('Tidak ada transaksi pengeluaran yang berhasil dipetakan dari teks PDF.');
-  warnings.push(...pageWarnings);
   if(declaredTotalFound&&declaredTotal!==rawExpenseTotal)warnings.push(`Validasi total PDF gagal: kolom Pengeluaran pada baris Jumlah = ${formatMoney(declaredTotal)}, tetapi penjumlahan baris transaksi = ${formatMoney(rawExpenseTotal)}.`);
   if(declaredTotalFound&&expectedIncluded!==actualIncluded)warnings.push(`Ada selisih setelah mengeluarkan Tarik Tunai: target ${formatMoney(expectedIncluded)}, hasil ${formatMoney(actualIncluded)}. Periksa format PDF/kolom.`);
 
@@ -440,16 +394,7 @@ function recoverLegacy(text){
   return {noBukti,uraian,penerimaan:money.penerimaan,pengeluaran:money.pengeluaran,saldo:money.saldo};
 }
 function normalizeHeader(v){return clean(v).toLowerCase().replace(/[\n\r]+/g,' ').replace(/[._:;|/\\()\-]+/g,' ').replace(/\s+/g,' ').trim();}
-function headerIndex(headers,patterns,opts){
-  /* Pola diprioritaskan berurutan (pola pertama = paling spesifik). Kolom berawalan "kode"
-     (Kode Kegiatan / Kode Rekening) tidak boleh dianggap kolom Uraian. */
-  const skipKode=!(opts&&opts.allowKode);
-  for(const re of patterns){
-    const i=headers.findIndex(v=>re.test(v)&&!(skipKode&&/^kode\b/.test(v)));
-    if(i>=0)return i;
-  }
-  return -1;
-}
+function headerIndex(headers,patterns){return headers.findIndex(v=>patterns.some(re=>re.test(v)));}
 function mergedHeaderRows(mat,start,span){
   const maxCols=Math.max(0,...mat.slice(start,start+span).map(r=>(r||[]).length));
   const out=Array(maxCols).fill('');
@@ -483,11 +428,9 @@ function inferExcelColumns(mat,start){
   const pi=numericCols.length>=3?numericCols[numericCols.length-3]:-1;
   return {di,ui,ei,pi,bi:-1,inferred:true};
 }
-const NON_TRANSACTION_RE=/^\s*(?:jumlah|total|sub\s*total|saldo|sisa\s+saldo|mengetahui|menyetujui|kepala\s+sekolah|bendahara|pindahan|dipindahkan)/i;
 function findExcelHeader(mat){
   const dateReH=/\b(?:tanggal|tgl|tanggal\s+transaksi|date)\b/i;
-  const descReH=/\b(?:uraian|keterangan|rincian|deskripsi|nama\s+barang|uraian\s+transaksi)\b/i;
-  const descReH2=/\bkegiatan\b/i; // cadangan terakhir, hanya bila tidak ada kolom Uraian
+  const descReH=/\b(?:uraian|keterangan|rincian|deskripsi|kegiatan|nama\s+barang|uraian\s+transaksi)\b/i;
   const outReH=/\b(?:pengeluaran|pengeluaran\s+kas|belanja|jumlah\s+pengeluaran|keluar|debit|debet)\b/i;
   const inReH=/\b(?:penerimaan|jumlah\s+penerimaan|masuk|kredit)\b/i;
   const proofReH=/\b(?:no\s*bukti|nomor\s*bukti|bukti|bpu|bnu)\b/i;
@@ -495,9 +438,9 @@ function findExcelHeader(mat){
   for(let r=0;r<limit;r++){
     for(const span of [1,2,3]){
       const h=mergedHeaderRows(mat,r,span); if(!h.length)continue;
-      const di=headerIndex(h,[dateReH]),ui=headerIndex(h,[descReH,descReH2]),ei=headerIndex(h,[outReH]);
+      const di=headerIndex(h,[dateReH]),ui=headerIndex(h,[descReH]),ei=headerIndex(h,[outReH]);
       const score=(di>=0?3:0)+(ui>=0?3:0)+(ei>=0?4:0)+(headerIndex(h,[inReH])>=0?1:0)+(headerIndex(h,[proofReH])>=0?1:0);
-      if(di>=0&&ui>=0&&ei>=0&&(!best||score>best.score))best={r,span,h,score,col:{di,ui,ei,bi:headerIndex(h,[proofReH],{allowKode:true}),pi:headerIndex(h,[inReH]),inferred:false}};
+      if(di>=0&&ui>=0&&ei>=0&&(!best||score>best.score))best={r,span,h,score,col:{di,ui,ei,bi:headerIndex(h,[proofReH]),pi:headerIndex(h,[inReH]),inferred:false}};
     }
   }
   if(best)return best;
@@ -508,10 +451,9 @@ function findExcelHeader(mat){
 async function readExcel(file){
   if(!window.XLSX)throw new Error('Mesin Excel belum siap. Pustaka XLSX tidak tersedia. Pastikan koneksi internet aktif saat membuka aplikasi lalu coba BACA DATA lagi.');
   const wb=window.XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true,raw:true});
-  const rows=[]; const allText=[]; let income=0,ignored=0,sheets=0,headerFound=0,missingEvidence=0,usedFallback=0,internalTransfer=0;
+  const rows=[]; const allText=[]; let income=0,ignored=0,sheets=0,headerFound=0,missingEvidence=0,usedFallback=0;
 
-  /* Angka murni BUKAN tanggal: nominal seperti 250000 dapat lolos sebagai serial tanggal Excel. Sel bertanggal sudah dikonversi menjadi Date oleh cellDates:true. */
-  const looksLikeDate=v=>!!normalizeDate(v);
+  const looksLikeDate=v=>!!normalizeDate(v) || (typeof v==='number' && !!excelDate(v));
   const nonNumericText=v=>{
     const t=clean(v); if(!t)return false;
     if(looksLikeDate(v))return false;
@@ -555,22 +497,17 @@ async function readExcel(file){
         const r=mat[i]||[];
         let tanggal=col.di>=0?excelDate(r[col.di]):'';
         if(tanggal&&!/^\d{2}-\d{2}-\d{4}$/.test(tanggal))tanggal=normalizeDate(tanggal);
-        const labelCells=r.map((v,c)=>c!==col.ei&&c!==col.pi&&!looksLikeDate(v)?clean(v):'').filter(Boolean);
-        if(!tanggal&&lastDate&&!NON_TRANSACTION_RE.test(labelCells[0]||''))tanggal=lastDate; else if(tanggal)lastDate=tanggal;
+        if(!tanggal&&lastDate)tanggal=lastDate; else if(tanggal)lastDate=tanggal;
         let noBukti=col.bi>=0?normalizeNoBukti(r[col.bi]):'';
         let uraian=col.ui>=0?sanitizeUraian(r[col.ui]):'';
         let pengeluaran=col.ei>=0?parseMoney(r[col.ei]):0;
         let penerimaan=col.pi>=0?parseMoney(r[col.pi]):0;
         let source=`sheet ${name}`;
         const joined=clean(r.map(v=>v instanceof Date?excelDate(v):String(v??'')).join(' | '));
-        /* Pemulihan teks gabungan hanya dipakai bila kolom terstruktur tidak memberi nominal sama sekali
-           (kedua kolom nol/kosong) DAN pemetaan kolom adalah hasil inferensi. Untuk header yang jelas,
-           nilai kolom dipercaya apa adanya agar baris Penerimaan tidak berubah menjadi Pengeluaran. */
-        const hasStructuredMoney=(col.ei>=0&&clean(r[col.ei])!=='')||(col.pi>=0&&clean(r[col.pi])!=='');
-        const legacy=(col.inferred||!hasStructuredMoney||col.ei<0)?recoverLegacy(joined):null;
+        const legacy=recoverLegacy(joined);
         if(legacy){
           noBukti=noBukti||legacy.noBukti; uraian=uraian||legacy.uraian;
-          if(pengeluaran<=0&&!(col.pi>=0&&penerimaan>0))pengeluaran=legacy.pengeluaran;
+          if(pengeluaran<=0)pengeluaran=legacy.pengeluaran;
           if(penerimaan<=0)penerimaan=legacy.penerimaan;
           if(!tanggal) tanggal=normalizeDate(joined);
           if(legacy.pengeluaran>0 || legacy.uraian)source+=' • dipulihkan';
@@ -580,9 +517,7 @@ async function readExcel(file){
           candidates.sort((a,b)=>b.t.length-a.t.length); if(candidates[0])uraian=sanitizeUraian(candidates[0].t);
         }
         if(!tanggal||!uraian){ignored++;continue;}
-        if(NON_TRANSACTION_RE.test(uraian)&&!isValidNoBukti(noBukti)){ignored++;continue;} // baris Jumlah/Saldo
         if(pengeluaran<=0){income+=Math.max(0,penerimaan);ignored++;continue;}
-        if(isInternalMovement(uraian)){internalTransfer+=pengeluaran;ignored++;continue;} // konsisten dengan PDF
         if(!isValidNoBukti(noBukti))missingEvidence++;
         rows.push({tanggal,noBukti,uraian,pengeluaran,penerimaan,confidence:legacy?.pengeluaran?0.92:(isValidNoBukti(noBukti)?0.99:(col.inferred?0.78:0.88)),source});
       }
@@ -597,7 +532,7 @@ async function readExcel(file){
       const tanggalVal=vals.find(x=>x.date)?.v;
       const tanggal=tanggalVal!==undefined?excelDate(tanggalVal):'';
       if(!tanggal)continue;
-      const noBuktiVal=vals.find(x=>/^(?:BPU|BNU)\s*[-./]?\s*\d+$/i.test(x.t))?.t||vals.find(x=>new RegExp(noBuktiRe.source,'i').test(x.t))?.t||'';
+      const noBuktiVal=vals.find(x=>/^(?:BPU|BNU)\s*[-./]?\s*\d+$/i.test(x.t))?.t||vals.find(x=>noBuktiRe.test(x.t))?.t||'';
       const noBukti=normalizeNoBukti(noBuktiVal);
       const numeric=vals.filter(x=>x.num>0 && (typeof x.v==='number'||/^[0-9][0-9.,()\s]*$/.test(x.t))).map(x=>({c:x.c,n:x.num}));
       if(!numeric.length)continue;
@@ -608,8 +543,6 @@ async function readExcel(file){
       const textCells=vals.filter(x=>x.text).map(x=>x.t).filter(t=>!/^(?:jumlah|total|saldo|tanggal|tgl|uraian|keterangan|penerimaan|pengeluaran)$/i.test(t));
       const uraian=sanitizeUraian(textCells.sort((a,b)=>b.length-a.length)[0]||'');
       if(!uraian||pengeluaran<=0)continue;
-      if(NON_TRANSACTION_RE.test(uraian)&&!isValidNoBukti(noBukti))continue;
-      if(isInternalMovement(uraian)){internalTransfer+=pengeluaran;continue;}
       if(!isValidNoBukti(noBukti))missingEvidence++;
       rows.push({tanggal,noBukti,uraian,pengeluaran,penerimaan,confidence:0.68,source:`sheet ${name} • mode pola isi`});
     }
@@ -627,7 +560,6 @@ async function readExcel(file){
   }
   const rawExpenseTotal=rows.reduce((sum,r)=>sum+(Number(r.pengeluaran)||0),0);
   const warnings=[];
-  if(internalTransfer>0)warnings.push(`Tarik Tunai senilai ${formatMoney(internalTransfer)} dikeluarkan sebagai pemindahan dana internal (sama seperti pembacaan PDF).`);
   if(!headerFound)warnings.push('Header standar tidak ditemukan; mesin memakai pembacaan berdasarkan pola isi.');
   if(usedFallback>0)warnings.push('Sebagian data dibaca dengan mode pemulihan. Periksa hasil transaksi sebelum membuat Surat Perintah.');
   if(rows.length&&missingEvidence)warnings.push(`${missingEvidence} transaksi tidak memiliki No. Bukti BPU/BNU; transaksi tetap dipertahankan karena tanggal, uraian, dan nominal pengeluaran tersedia.`);
