@@ -152,22 +152,22 @@
 </div>
 <div id="tabPajak" class="tab-panel pajak-group" role="tabpanel">
 <section class="card">
-<div class="upload-head"><div class="upload-icon">%</div><div><div class="section-title">Hitung Pajak</div><div class="section-sub">Hanya transaksi yang teridentifikasi sebagai pajak yang ditampilkan. Nilai pajak dihitung dari data murni hasil ekstraksi, tanpa mengubah data BKU.</div></div></div>
+<div class="upload-head"><div class="upload-icon">%</div><div><div class="section-title">Hitung Pajak</div><div class="section-sub">Hanya transaksi bertuliskan Setor PPh / Setor PPN yang ditampilkan dan dihitung. Nilai pajak dihitung dari data murni hasil ekstraksi, tanpa mengubah data BKU.</div></div></div>
 <div class="tax-summary-grid">
   <div class="metric tax-siplah"><span>Total Pajak SIPLah</span><b id="taxSiplahTotal">0</b></div>
   <div class="metric tax-nonsiplah"><span>Total Pajak Non SIPLah</span><b id="taxNonSiplahTotal">0</b></div>
   <div class="metric"><span>Total Seluruh Pajak</span><b id="taxGrandTotal">0</b></div>
   <div class="metric"><span>Jumlah Transaksi Pajak</span><b id="taxCount">0</b></div>
 </div>
-<div class="tax-note">Klasifikasi SIPLah ditandai dari keterangan transaksi yang memuat kata <b>SIPLah</b>. Selain itu masuk kategori <b>Non SIPLah</b>. Tidak ada tarif pajak yang ditebak; nominal mengikuti angka pajak yang benar-benar diekstrak dari BKU.</div>
+<div class="tax-note">Pajak yang dihitung hanya dua jenis: <b>(1) Pajak SIPLah</b> — transaksi bertuliskan <b>Setor …</b> yang memuat <b>(Transaksi SIPLah)</b>; dan <b>(2) Pajak Non SIPLah</b> — transaksi bertuliskan <b>Setor PPh</b> atau <b>Setor PPN</b>. Transaksi lain tidak dihitung dan tidak ada tarif pajak yang ditebak.</div>
 </section>
 <section class="card">
-<div class="toolbar"><div><div class="section-title">Daftar Pajak SIPLah</div><div class="section-sub">PPh/PPN dan transaksi pajak terkait SIPLah saja.</div></div></div>
+<div class="toolbar"><div><div class="section-title">Daftar Pajak SIPLah</div><div class="section-sub">Setor … yang bertuliskan (Transaksi SIPLah).</div></div></div>
 <div class="table-wrap" style="margin-top:14px"><table class="data-table tax-table"><thead><tr><th>No</th><th>Tanggal</th><th>No. Bukti</th><th>Jenis Pajak</th><th>Uraian</th><th class="num">Nilai Pajak</th></tr></thead><tbody id="taxSiplahBody"><tr><td colspan="6" class="empty">Belum ada data pajak SIPLah.</td></tr></tbody></table></div>
 <div class="raw-total-row"><span>Total Pajak SIPLah</span><b id="taxSiplahFooter">0</b></div>
 </section>
 <section class="card">
-<div class="toolbar"><div><div class="section-title">Daftar Pajak Non SIPLah</div><div class="section-sub">PPh/PPN dan transaksi pajak yang bukan SIPLah.</div></div></div>
+<div class="toolbar"><div><div class="section-title">Daftar Pajak Non SIPLah</div><div class="section-sub">Setor PPh/PPN tanpa tulisan (Transaksi SIPLah).</div></div></div>
 <div class="table-wrap" style="margin-top:14px"><table class="data-table tax-table"><thead><tr><th>No</th><th>Tanggal</th><th>No. Bukti</th><th>Jenis Pajak</th><th>Uraian</th><th class="num">Nilai Pajak</th></tr></thead><tbody id="taxNonSiplahBody"><tr><td colspan="6" class="empty">Belum ada data pajak Non SIPLah.</td></tr></table></div>
 <div class="raw-total-row"><span>Total Pajak Non SIPLah</span><b id="taxNonSiplahFooter">0</b></div>
 </section>

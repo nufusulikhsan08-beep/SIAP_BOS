@@ -35,8 +35,12 @@ function normalizeDate(s){
   }
   const x=clean(s);
   if(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(x)){const [y,m,d]=x.split(/[-/]/);return `${String(d).padStart(2,'0')}-${String(m).padStart(2,'0')}-${y}`;}
-  const m=x.match(/\b(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})\b/);
-  return m?`${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}-${m[3]}`:'';
+  let m=x.match(/\b(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})\b/);
+  if(m)return `${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}-${m[3]}`;
+  m=x.match(/\b(\d{1,2})\s+[-/.]?\s*(\d{1,2})\s+[-/.]?\s*(\d{4})\b/);
+  if(m)return `${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}-${m[3]}`;
+  m=x.match(/\b(\d{4})\s+[-/.]?\s*(\d{1,2})\s+[-/.]?\s*(\d{1,2})\b/);
+  return m?`${String(m[3]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}-${m[1]}`:'';
 }
 function normalizeNoBukti(s){const m=clean(s).match(noBuktiRe);return m?m[0].replace(/\s+/g,'').replace(/[-./]/g,'').toUpperCase():'';}
 function isValidNoBukti(s){return /^(?:BPU|BNU)\d+$/i.test(clean(s));}
@@ -95,68 +99,73 @@ function extractColumnLines(items,bounds){
 }
 function extractColumnText(items,bounds){return clean(extractColumnLines(items,bounds).join(' '));}
 function extractColumnMoney(items,bounds){
-  const direct=[];
+  const candidates=[];
   for(const item of (items||[]).filter(i=>inPdfCol(i,bounds))){
-    const t=pdfItemText(item).replace(/\s/g,'');
-    if(moneyOnlyRe.test(t))direct.push(parseMoney(t));
-  }
-  if(direct.length)return direct[direct.length-1];
-
-  /* Fallback: gabungkan teks sel lalu cari token nominal. */
-  const cell=extractColumnText(items,bounds).replace(/\s+/g,' ');
-  const matches=[...cell.matchAll(new RegExp(moneyTokenRe.source,'gi'))].map(m=>clean(m[0])).filter(t=>moneyOnlyRe.test(t));
-  return matches.length?parseMoney(matches[matches.length-1]):0;
-}
-function detectPdfColumns(items,pageWidth){
-  const fallback=pdfColumns(pageWidth);
-  const lines=groupPdfLines(items,2.8);
-  const rules={
-    tanggal:/^(?:tgl|tanggal)$/i,
-    bukti:/\bbukti\b/i,
-    uraian:/uraian|keterangan|deskripsi|rincian/i,
-    penerimaan:/penerimaan|\bmasuk\b/i,
-    pengeluaran:/pengeluaran|belanja|\bkeluar\b/i,
-    saldo:/^saldo$|\bsaldo\b/i
-  };
-  const found={};
-  let bestScore=0;
-  for(const line of lines){
-    const text=lineText(line);
-    let score=0; const local={};
-    for(const [key,re] of Object.entries(rules)){
-      const item=line.items.find(i=>re.test(pdfItemText(i)));
-      if(item){local[key]=itemCenterX(item);score++;continue;}
-      if(key==='bukti'&&/no\.?\s*bukti|nomor\s*bukti/i.test(text)){
-        const itemsOnLine=line.items.filter(i=>/no|bukti|nomor/i.test(pdfItemText(i)));
-        if(itemsOnLine.length)local[key]=itemsOnLine.reduce((a,i)=>a+itemCenterX(i),0)/itemsOnLine.length;
-      }
+    const raw=pdfItemText(item).replace(/\s/g,'');
+    if(moneyOnlyRe.test(raw)){
+      const n=parseMoney(raw);
+      candidates.push({n,x:itemCenterX(item),text:raw});
     }
-    if(score>bestScore){bestScore=score;Object.assign(found,local);}
   }
-  if(bestScore<3)return fallback;
-  const out={...fallback};
-  const ordered=Object.entries(found).sort((a,b)=>a[1]-b[1]);
-  for(const [key,x] of ordered){
-    let left=0,right=Number(pageWidth)||PDF_BASE_WIDTH;
-    const idx=ordered.findIndex(([k])=>k===key);
-    if(idx>0)left=(ordered[idx-1][1]+x)/2;
-    if(idx<ordered.length-1)right=(x+ordered[idx+1][1])/2;
-    out[key]=[left,right];
+  if(candidates.length){
+    // Dalam kolom nominal, jika ada beberapa token akibat pemecahan PDF,
+    // gunakan token paling kanan yang bernilai paling masuk akal. Nilai 4 digit
+    // seperti "2026" tidak dianggap nominal jika ada nominal lebih besar.
+    const positive=candidates.filter(c=>c.n>=0);
+    const large=positive.filter(c=>c.n>=10000);
+    return (large.length?large:positive).sort((a,b)=>a.x-b.x).at(-1)?.n||0;
   }
-  return out;
+  const cell=extractColumnText(items,bounds).replace(/\s+/g,' ');
+  const matches=[...cell.matchAll(new RegExp(moneyTokenRe.source,'gi'))]
+    .map(m=>clean(m[0])).filter(t=>moneyOnlyRe.test(t)).map(t=>parseMoney(t));
+  if(!matches.length)return 0;
+  const large=matches.filter(n=>n>=10000);
+  return (large.length?large:matches).at(-1)||0;
 }
 
+function detectPdfColumns(items,pageWidth){
+  /*
+   * BKU Lebak Wangi memakai template A4 dengan posisi kolom tetap.
+   * Jangan menggunakan titik tengah teks header sebagai batas kolom:
+   * header "URAIAN" berada di tengah kolom yang lebar, sehingga midpoint
+   * header akan memotong kata-kata awal seperti "Internet Berlangganan-20".
+   * Gunakan geometri template (dengan scaling sesuai lebar halaman) sebagai
+   * sumber utama. Ini juga membuat halaman yang memiliki header dan halaman
+   * lanjutan diperlakukan konsisten.
+   */
+  return pdfColumns(pageWidth);
+}
 function findPdfDateRows(items,cols){
   const rows=[];
-  for(const item of items){
-    if(!inPdfCol(item,cols.tanggal))continue;
+  const candidates=(items||[]).filter(i=>inPdfCol(i,cols.tanggal));
+  // Prioritaskan kolom tanggal, tetapi jangan menghilangkan transaksi hanya karena
+  // PDF.js menggeser/memecah item tanggal sedikit keluar dari batas kolom.
+  const source=candidates.length?candidates:items;
+  for(const item of source){
     const t=pdfItemText(item);
     const tanggal=normalizeDate(t);
-    if(tanggal)rows.push({item,y:Number(item.y||0),tanggal});
+    if(tanggal)rows.push({item,y:Number(item.y||0),tanggal,source:candidates.length?'column':'global'});
+  }
+  // PDF tertentu memecah "01-10-2026" menjadi beberapa item di satu baris.
+  // Gabungkan teks per garis dan coba baca ulang tanggal dari garis tersebut.
+  for(const line of groupPdfLines(items,2.5)){
+    const tanggal=normalizeDate(lineText(line));
+    if(tanggal){
+      const near=source.filter(i=>Math.abs(Number(i.y||0)-line.y)<=2.5);
+      rows.push({item:near[0]||line.items?.[0],y:line.y,tanggal,source:'line'});
+    }
   }
   rows.sort((a,b)=>b.y-a.y);
   const ded=[];
-  for(const row of rows){if(!ded.length||Math.abs(ded[ded.length-1].y-row.y)>1.5)ded.push(row);}
+  for(const row of rows){
+    const prev=ded[ded.length-1];
+    if(prev&&Math.abs(prev.y-row.y)<=2.5){
+      // Lebih percaya tanggal yang benar-benar berasal dari kolom tanggal.
+      if(prev.source!=='column'&&row.source==='column')prev.tanggal=row.tanggal;
+      continue;
+    }
+    ded.push(row);
+  }
   return ded;
 }
 function buildPdfRowBands(items,dateRows){
@@ -176,6 +185,43 @@ function buildPdfRowBands(items,dateRows){
   return bands;
 }
 function isInternalMovement(uraian){return /^Tarik Tunai\b/i.test(clean(uraian));}
+function recoverPdfRowBands(items,cols,dateRows,existingBands=[]){
+  const bands=[...(existingBands||[])];
+  const existingYs=bands.map(b=>Number(b.y||0));
+  const lines=groupPdfLines(items,2.5);
+  const anchors=[];
+  for(const line of lines){
+    const text=lineText(line);
+    if(!text||/^(?:jumlah|total|saldo(?:\s+akhir)?|penerimaan|pengeluaran|uraian|tanggal|tgl|no\.?\s*bukti)\b/i.test(text))continue;
+    const noBukti=/\b(?:BPU|BNU)\s*[-./]?\s*\d+\b/i.test(text);
+    const expense=extractColumnMoney(line.items,cols.pengeluaran);
+    const uraian=sanitizeUraian(extractColumnText(line.items,cols.uraian));
+    const hasAmount=expense>0 || [...text.matchAll(new RegExp(moneyTokenRe.source,'gi'))].some(m=>{const t=clean(m[0]);const n=parseMoney(t);return moneyOnlyRe.test(t)&&n>0&&!(n>=1900&&n<=2100&&/^\d{4}$/.test(t.replace(/\D/g,'')));});
+    if((noBukti|| (hasAmount&&uraian.length>=6)) && !existingYs.some(y=>Math.abs(y-line.y)<=5)) anchors.push({y:line.y,score:noBukti?2:1});
+  }
+  // Satu transaksi bisa punya beberapa text-line. Ambil satu anchor terkuat per y.
+  const grouped=[];
+  for(const a of anchors.sort((x,y)=>y.y-x.y)){
+    const hit=grouped.find(g=>Math.abs(g.y-a.y)<=3);
+    if(hit){if(a.score>hit.score)hit.score=a.score;} else grouped.push({...a});
+  }
+  const allYs=[...dateRows.map(r=>Number(r.y||0)),...grouped.map(a=>a.y)].sort((a,b)=>b-a);
+  for(const a of grouped){
+    const idx=allYs.indexOf(a.y);
+    const prevY=idx>0?allYs[idx-1]:null;
+    const nextY=idx<allYs.length-1?allYs[idx+1]:null;
+    const top=prevY==null?a.y+9:(prevY+a.y)/2;
+    const bottom=nextY==null?a.y-9:(a.y+nextY)/2;
+    const rowItems=(items||[]).filter(it=>Number(it.y||0)<=top+0.6&&Number(it.y||0)>bottom-0.6);
+    const existing=grouped.find(g=>g!==a&&Math.abs(g.y-a.y)<=1.5);
+    if(existing||!rowItems.length)continue;
+    let tanggal='';
+    const nearest=[...dateRows].sort((x,y)=>Math.abs(x.y-a.y)-Math.abs(y.y-a.y))[0];
+    if(nearest&&Math.abs(nearest.y-a.y)<=28)tanggal=nearest.tanggal;
+    bands.push({tanggal,y:a.y,rowItems,recovered:true});
+  }
+  return bands.sort((a,b)=>b.y-a.y);
+}
 
 function maskMatches(text,re){return text.replace(new RegExp(re.source,re.flags.replace('g','')),m=>' '.repeat(m.length));}
 function getMoney3(text){
@@ -519,7 +565,7 @@ async function readExcel(file){
         if(!tanggal||!uraian){ignored++;continue;}
         if(pengeluaran<=0){income+=Math.max(0,penerimaan);ignored++;continue;}
         if(!isValidNoBukti(noBukti))missingEvidence++;
-        rows.push({tanggal,noBukti,uraian,pengeluaran,penerimaan,confidence:legacy?.pengeluaran?0.92:(isValidNoBukti(noBukti)?0.99:(col.inferred?0.78:0.88)),source});
+        rows.push({tanggal,noBukti,uraian,pengeluaran,penerimaan,isInternalTransfer:isInternalMovement(uraian),confidence:legacy?.pengeluaran?0.92:(isValidNoBukti(noBukti)?0.99:(col.inferred?0.78:0.88)),source});
       }
       continue;
     }
@@ -544,7 +590,7 @@ async function readExcel(file){
       const uraian=sanitizeUraian(textCells.sort((a,b)=>b.length-a.length)[0]||'');
       if(!uraian||pengeluaran<=0)continue;
       if(!isValidNoBukti(noBukti))missingEvidence++;
-      rows.push({tanggal,noBukti,uraian,pengeluaran,penerimaan,confidence:0.68,source:`sheet ${name} • mode pola isi`});
+      rows.push({tanggal,noBukti,uraian,pengeluaran,penerimaan,isInternalTransfer:isInternalMovement(uraian),confidence:0.68,source:`sheet ${name} • mode pola isi`});
     }
     sheets++;
   }
@@ -598,11 +644,22 @@ function groupRowsByBukti(rows){
 function taxInfo(r){
   const u=clean(r?.uraian||'');
   const amount=Math.max(0,Number(r?.pengeluaran)||0);
-  // Hanya catat pajak yang benar-benar tercatat sebagai pengeluaran (telah dibayarkan), bukan angka pajak nol/sekadar referensi.
-  if(!/\b(?:pph|ppn|pajak)\b/i.test(u) || amount<=0)return null;
-  const siplah=/\(\s*siplah\s*\)/i.test(u) || /siplah/i.test(u);
-  const pph=u.match(/\bPPh\s*[^,;|\s]*/i), ppn=u.match(/\bPPN\b/i);
-  const type=pph?clean(pph[0]).toUpperCase().replace(/\s+/g,' '):(ppn?'PPN':'Pajak');
+  if(amount<=0)return null;
+  // ATURAN HITUNG PAJAK (hanya dua jenis yang dihitung):
+  // 1) SIPLah     : uraian diawali/memuat "Setor ..." DAN bertuliskan "(Transaksi SIPLah)"
+  //                 contoh: "Setor Pengadaan Perlengkapan Sekolah ... (Transaksi SIPLah)"
+  // 2) Non SIPLah : uraian bertuliskan "Setor PPh" atau "Setor PPN" tanpa "(Transaksi SIPLah)"
+  // Baris lain (mis. "Belanja ... (Transaksi SIPLah)" tanpa kata Setor, atau hanya menyebut PPh/PPN) TIDAK dihitung.
+  const siplah=/transaksi\s+siplah/i.test(u);
+  const hasSetor=/\bsetor\b/i.test(u);
+  const m=u.match(/\bSetor\s+(PPh|PPN)\b(?:\s*(?:pasal|ps\.?)?\s*(\d+[a-z]?))?/i);
+  if(siplah){
+    if(!hasSetor)return null;
+  }else if(!m){
+    return null;
+  }
+  let type='SIPLah';
+  if(m){const kind=m[1].toUpperCase()==='PPN'?'PPN':'PPh';type=kind==='PPh'&&m[2]?`PPh ${m[2]}`:kind;}
   return {row:r,siplah,type,amount};
 }
 function getTaxRows(rows=state.rawRows){return (Array.isArray(rows)?rows:[]).map(taxInfo).filter(Boolean);}
@@ -619,7 +676,7 @@ Object.assign(ns,{
   PDF_BASE_WIDTH,PDF_BASE_COLS,
   clean,normalizeDate,normalizeNoBukti,isValidNoBukti,parseMoney,formatMoney,stripMetadata,sanitizeUraian,
   pdfColumns,itemCenterX,inPdfCol,pdfItemText,groupPdfLines,lineText,uniqueConsecutiveLines,extractColumnLines,extractColumnText,extractColumnMoney,
-  findPdfDateRows,buildPdfRowBands,isInternalMovement,maskMatches,getMoney3,
+  findPdfDateRows,buildPdfRowBands,recoverPdfRowBands,isInternalMovement,maskMatches,getMoney3,
   afterLabelValue,extractNip,normalizeSchoolName,normalizeKecamatan,resolveBkuKecamatan,validateBkuKecamatan,extractKecamatanFromAddress,normalizeBkuAddress,
   roleSignature,extractPdfIdentityPage,extractPdfSignatures,finalizeBkuIdentity,applyIdentityToSurat,resetAutoIdentity,
   readPdf,detectPdfColumns,excelDate,recoverLegacy,readExcel,

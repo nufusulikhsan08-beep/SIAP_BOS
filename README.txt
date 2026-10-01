@@ -186,3 +186,24 @@ UPDATE DASHBOARD v3 — TAMPILAN LEBIH MODERN
 - Tren Bulanan (6 bulan terakhir) dari tanggal simpan SPMU.
 - Kolom pencarian pada tabel Rekap Tersimpan (pekerjaan / kategori / no. bukti).
 - Hanya index.html (bagian dashboard), js/dashboard.js, dan styles.css (blok dx- di akhir file) yang berubah. Tab lain tidak terpengaruh.
+
+PEMUTAKHIRAN LOGIKA HITUNG PAJAK
+- Pajak SIPLah: transaksi bertuliskan "Setor ..." yang memuat "(Transaksi SIPLah)", contoh:
+  "Setor Pengadaan Perlengkapan Sekolah diluar komponen penyediaan alat multimedia pembelajaran (Transaksi SIPLah)".
+- Pajak Non SIPLah: transaksi bertuliskan "Setor PPh" atau "Setor PPN" (tanpa "(Transaksi SIPLah)").
+- Transaksi lain tidak dihitung (mis. "Belanja ... (Transaksi SIPLah)" tanpa kata Setor). Nominal Pengeluaran harus > 0.
+- Perubahan: js/bku-parser.js (fungsi taxInfo) dan teks keterangan di index.html. Dashboard otomatis mengikuti.
+
+
+=== PERBAIKAN EKSTRAKSI CRITICAL v2 — 2 OKTOBER 2026 ===
+- PDF: tanggal transaksi tidak lagi wajib berada tepat di dalam batas kolom Tanggal; parser juga membaca tanggal dari garis/baris PDF dan mendukung tanggal yang terpecah oleh PDF.js.
+- PDF: ditambahkan mode pemulihan baris untuk transaksi yang tanggalnya tidak terbaca tetapi masih memiliki No. Bukti BPU/BNU atau kombinasi uraian + nominal Pengeluaran.
+- PDF: mode pemulihan menghindari baris Jumlah/Total/Saldo agar tidak dianggap sebagai transaksi.
+- PDF/Excel: transaksi Tarik Tunai tidak lagi hilang dari Data Murni. Transaksi tersebut diberi penanda pemindahan dana internal dan hanya dikeluarkan dari daftar transaksi Surat Perintah.
+- Validasi total tetap menghitung seluruh pengeluaran tercetak, sedangkan total yang dipakai untuk Surat Perintah tetap mengecualikan pemindahan dana internal.
+
+
+PERBAIKAN V3:
+- Kolom PDF BKU dikunci mengikuti geometri template A4 yang sebenarnya; header tengah 'URAIAN' tidak lagi dipakai sebagai batas kolom.
+- Memperbaiki transaksi Internet Berlangganan yang sebelumnya terlewat pada halaman yang memiliki header.
+- Pemulihan transaksi (recovery) tetap aktif untuk baris yang teks PDF-nya terpecah.

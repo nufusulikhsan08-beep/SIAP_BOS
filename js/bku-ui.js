@@ -4,7 +4,7 @@ const {
   $,state,esc,formatMoney,clean,groupRowsByBukti,validateBkuKecamatan,finalizeBkuIdentity,applyIdentityToSurat,
   readPdf,readExcel,resetAutoIdentity,normalizeNoBukti,getTaxRows,getTaxSummary,sanitizeUraian,
   pdfColumns,detectPdfColumns,groupPdfLines,lineText,extractPdfIdentityPage,extractPdfSignatures,
-  extractColumnText,extractColumnMoney,findPdfDateRows,buildPdfRowBands,isInternalMovement
+  extractColumnText,extractColumnMoney,findPdfDateRows,buildPdfRowBands,recoverPdfRowBands,isInternalMovement
 }=ns;
 const syncSurat=()=>ns.syncSurat();
 const enableSuratSection=()=>ns.enableSuratSection();
@@ -102,7 +102,7 @@ async function extractBkuData(){
     rawResult.rawRowCount=rawRows.length;
     rawResult.groupedRowCount=groupRowsByBukti(rawRows).length;
     state.rawRows=rawRows.map(r=>({...r}));
-    state.rows=groupRowsByBukti(rawRows);
+    state.rows=groupRowsByBukti(rawRows.filter(r=>!r.isInternalTransfer));
     state.result=rawResult;
     applyIdentityToSurat(rawResult.identity||{});
     state.result.identity=state.identity;
@@ -156,7 +156,8 @@ async function readPdfWithProgress(file,onProgress){
       }
     }
     const dateRows=findPdfDateRows(items,cols);
-    const bands=buildPdfRowBands(items,dateRows);
+    const primaryBands=buildPdfRowBands(items,dateRows);
+    const bands=recoverPdfRowBands(items,cols,dateRows,primaryBands);
     blocks+=bands.length;
     for(const band of bands){
       const rowItems=band.rowItems;
@@ -175,11 +176,12 @@ async function readPdfWithProgress(file,onProgress){
     if(typeof onProgress==='function')onProgress(pageNo,pdf.numPages);
   }
   const expectedIncluded=declaredTotalFound?Math.max(0,declaredTotal-internalTransferTotal):0;
-  const actualIncluded=rows.reduce((s,r)=>s+r.pengeluaran,0);
+  const actualIncluded=rows.filter(r=>!r.isInternalTransfer).reduce((s,r)=>s+r.pengeluaran,0);
   const warnings=[];
   if(rows.length===0)warnings.push('Tidak ada transaksi pengeluaran yang berhasil dipetakan dari teks PDF.');
   if(declaredTotalFound&&declaredTotal!==rawExpenseTotal)warnings.push(`Validasi total PDF gagal: kolom Pengeluaran pada baris Jumlah = ${formatMoney(declaredTotal)}, tetapi penjumlahan baris transaksi = ${formatMoney(rawExpenseTotal)}.`);
   if(declaredTotalFound&&expectedIncluded!==actualIncluded)warnings.push(`Ada selisih setelah mengeluarkan Tarik Tunai: target ${formatMoney(expectedIncluded)}, hasil ${formatMoney(actualIncluded)}. Periksa format PDF/kolom.`);
+  if(internalTransferTotal>0)warnings.push(`Tarik Tunai sebesar ${formatMoney(internalTransferTotal)} tetap disimpan di Data Murni, tetapi tidak dimasukkan ke transaksi Surat Perintah karena merupakan pemindahan dana internal.`);
   return {rows,declaredTotal,declaredTotalFound,rawExpenseTotal,internalTransferTotal,expectedIncluded,actualIncluded,excludedIncome:income,pages:pdf.numPages,blocks,ignoredRows:ignored,warnings,identity:finalizeBkuIdentity(identity),validation:{declaredTotal,declaredTotalFound,rawExpenseTotal,internalTransferTotal,expectedIncluded,actualIncluded,ok:declaredTotalFound?(declaredTotal===rawExpenseTotal&&expectedIncluded===actualIncluded):rows.length>0},validationRule:'Semua pengeluaran dari kolom PENGELUARAN dipertahankan, kecuali Tarik Tunai (pemindahan dana internal). Terima/pemasukan dan saldo diabaikan.'};
 }
 
