@@ -16,8 +16,10 @@ function suratElement(key){
   return $(ids[key] || ('surat'+key.charAt(0).toUpperCase()+key.slice(1)));
 }
 function setTab(name){
-  const isDashboard=name==='dashboard', isBku=name==='bku', isSurat=name==='surat', isPajak=name==='pajak';
+  const isDashboard=name==='dashboard', isProfil=name==='profil', isBku=name==='bku', isSurat=name==='surat', isPajak=name==='pajak';
   if($('tabDashboard'))$('tabDashboard').classList.toggle('active',isDashboard);
+  if($('tabProfil'))$('tabProfil').classList.toggle('active',isProfil);
+  if($('tabProfilBtn')){ $('tabProfilBtn').classList.toggle('active',isProfil); $('tabProfilBtn').setAttribute('aria-selected',String(isProfil)); }
   $('tabBku').classList.toggle('active',isBku); $('tabSurat').classList.toggle('active',isSurat); $('tabPajak').classList.toggle('active',isPajak);
   if($('tabDashboardBtn')){ $('tabDashboardBtn').classList.toggle('active',isDashboard); $('tabDashboardBtn').setAttribute('aria-selected',String(isDashboard)); }
   $('tabBkuBtn').classList.toggle('active',isBku); $('tabSuratBtn').classList.toggle('active',isSurat); $('tabPajakBtn').classList.toggle('active',isPajak);

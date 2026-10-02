@@ -338,12 +338,19 @@ function finalizeBkuIdentity(identity){
 function applyIdentityToSurat(identity){
   const id=finalizeBkuIdentity(identity||{});
   state.identity=id;
-  const map={sd:id.school,kecamatan:id.kecamatan,alamat:id.alamat,npsn:id.npsn,bendahara:id.treasurerName,nipBendahara:id.treasurerNip,kepala:id.headName,nipKepala:id.headNip};
+  const map={sd:id.school,kecamatan:id.kecamatan,npsn:id.npsn,bendahara:id.treasurerName,nipBendahara:id.treasurerNip,kepala:id.headName,nipKepala:id.headNip};
   for(const [key,value] of Object.entries(map)){state.surat[key]=value||'';const el=suratElement(key);if(el)el.value=value||'';}
+  const savedProfile=(()=>{try{return JSON.parse(localStorage.getItem('siapbos_profile_surat_kontak_v1')||'null')}catch(_){return null}})();
+  if(!savedProfile){state.surat.alamat=id.alamat||'';const addressEl=suratElement('alamat');if(addressEl)addressEl.value=id.alamat||'';}
   const required=[['Nama Sekolah',id.school],['Alamat',id.alamat],['Kepala Sekolah',id.headName],['NIP Kepala Sekolah',id.headNip],['Bendahara',id.treasurerName],['NIP Bendahara',id.treasurerNip]];
   const missing=required.filter(([,v])=>!clean(v)).map(([k])=>k);
   $('identityStatus').className='auto-status '+(missing.length?'auto-status-warn':'auto-status-ok');
   $('identityStatus').textContent=missing.length?`⚠ Identitas BKU terdeteksi sebagian. Belum terbaca: ${missing.join(', ')}.`:`✓ Identitas surat terisi otomatis dari BKU: ${id.school} • Kepala ${id.headName} • Bendahara ${id.treasurerName}.`;
+  const hero=$('pfHeroStatus');
+  if(hero){
+    hero.textContent=missing.length?`⚠ Identitas BKU belum lengkap • ${missing.length} data perlu diperiksa`:`✓ Identitas surat terisi otomatis dari BKU • ${id.school} • Kepala ${id.headName} • Bendahara ${id.treasurerName}`;
+    hero.classList.toggle('warn',!!missing.length);
+  }
   return id;
 }
 function resetAutoIdentity(){
@@ -351,6 +358,8 @@ function resetAutoIdentity(){
   applyIdentityToSurat(state.identity);
   $('identityStatus').className='auto-status';
   $('identityStatus').textContent='● Menunggu data identitas BKU. Baca PDF terlebih dahulu.';
+  const hero=$('pfHeroStatus');
+  if(hero){hero.textContent='● Menunggu BKU • Profil akan terisi otomatis setelah data dibaca';hero.classList.remove('warn');}
 }
 
 /* ==================== SEGMEN 1 — EKSTRAKSI & VALIDASI DATA BKU ==================== */

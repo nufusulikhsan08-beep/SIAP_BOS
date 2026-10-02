@@ -22,7 +22,7 @@ function sPMUItems(project){
       return a&&b&&a===b;
     });
     const nominal=Math.max(0,Number(d.nominal??row?.pengeluaran)||0);
-    return {category:String(d.category),nominal,bukti:no,savedAt:Number(d.savedAt)||0};
+    return {category:String(d.category),nominal,bukti:no,untukPembayaran:String(d.untukPembayaran||''),savedAt:Number(d.savedAt)||0};
   });
 }
 function barHtml(label,value,max){
@@ -33,11 +33,11 @@ let allItems=[];
 function drawTable(){
   const tbody=document.getElementById('dashboardTableBody');if(!tbody)return;
   const q=(document.getElementById('dashSearch')?.value||'').trim().toLowerCase();
-  const items=allItems.filter(it=>!q||[it.projectName,it.category,it.bukti].join(' ').toLowerCase().includes(q));
-  if(!allItems.length){tbody.innerHTML='<tr><td colspan="5" class="empty">Belum ada SPMU tersimpan. Simpan data SPMU dari Tab SURAT PERINTAH.</td></tr>';return;}
-  if(!items.length){tbody.innerHTML='<tr><td colspan="5" class="empty">Tidak ada data yang cocok dengan pencarian.</td></tr>';return;}
+  const items=allItems.filter(it=>!q||[it.projectName,it.untukPembayaran,it.category,it.bukti].join(' ').toLowerCase().includes(q));
+  if(!allItems.length){tbody.innerHTML='<tr><td colspan="6" class="empty">Belum ada SPMU tersimpan. Simpan data SPMU dari Tab SURAT PERINTAH.</td></tr>';return;}
+  if(!items.length){tbody.innerHTML='<tr><td colspan="6" class="empty">Tidak ada data yang cocok dengan pencarian.</td></tr>';return;}
   const total=items.reduce((a,x)=>a+x.nominal,0);
-  tbody.innerHTML=items.map((item,i)=>`<tr><td>${i+1}</td><td>${ns.esc(item.projectName)}${item.bukti?`<div class="small">No. Bukti: ${ns.esc(item.bukti)}</div>`:''}</td><td>${pill(item.category)}</td><td>${item.savedAt?new Date(item.savedAt).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-'}</td><td class="num">${money(item.nominal)}</td></tr>`).join('')+`<tr class="dash-total-row"><td colspan="4">Total ${items.length} SPMU</td><td class="num">${money(total)}</td></tr>`;
+  tbody.innerHTML=items.map((item,i)=>`<tr><td>${i+1}</td><td><div class="dash-job-name">${ns.esc(item.projectName)}</div>${item.bukti?`<div class="small">No. Bukti: ${ns.esc(item.bukti)}</div>`:''}</td><td><div class="dash-payment-purpose">${ns.esc(item.untukPembayaran||'— Belum diisi —')}</div></td><td>${pill(item.category)}</td><td>${item.savedAt?new Date(item.savedAt).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-'}</td><td class="num">${money(item.nominal)}</td></tr>`).join('')+`<tr class="dash-total-row"><td colspan="5">Total ${items.length} SPMU</td><td class="num">${money(total)}</td></tr>`;
 }
 document.getElementById('dashSearch')?.addEventListener('input',drawTable);
 async function renderDashboard(){
@@ -79,7 +79,7 @@ async function renderDashboard(){
     if(co)co.innerHTML=barHtml('Barang dan Jasa',sums[CATEGORY.operBarang],om)+barHtml('Pegawai',sums[CATEGORY.operPegawai],om);
     allItems=savedSPMUs;drawTable();
   }catch(e){
-    if(tbody)tbody.innerHTML=`<tr><td colspan="5" class="empty">Gagal membaca rekap: ${ns.esc(e?.message||e)}</td></tr>`;
+    if(tbody)tbody.innerHTML=`<tr><td colspan="6" class="empty">Gagal membaca rekap: ${ns.esc(e?.message||e)}</td></tr>`;
   }
 }
 document.querySelectorAll('.view-switch-btn').forEach(btn=>btn.addEventListener('click',()=>{

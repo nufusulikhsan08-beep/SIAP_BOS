@@ -25,6 +25,7 @@
   <div class="sidebar-label">NAVIGASI</div>
   <nav class="sidebar-nav" role="tablist" aria-label="Modul aplikasi">
     <button id="tabDashboardBtn" class="side-btn active" type="button" role="tab" aria-selected="true"><span class="side-icon">▦</span><span>Dashboard</span></button>
+    <button id="tabProfilBtn" class="side-btn" type="button" role="tab" aria-selected="false"><span class="side-icon">◉</span><span>PROFIL</span></button>
     <button id="tabBkuBtn" class="side-btn" type="button" role="tab" aria-selected="false"><span class="side-icon">1</span><span>EKSTRAKSI BKU</span></button>
     <button id="tabSuratBtn" class="side-btn locked" type="button" role="tab" aria-selected="false" disabled><span class="side-icon">2</span><span>SURAT PERINTAH</span></button>
     <button id="tabPajakBtn" class="side-btn locked" type="button" role="tab" aria-selected="false" disabled><span class="side-icon">3</span><span>HITUNG PAJAK</span></button>
@@ -54,7 +55,54 @@
     <div class="card chart-card"><div class="toolbar"><div><div class="section-title">Belanja Operasional</div><div class="section-sub">Barang dan Jasa • Pegawai</div></div></div><div class="bar-chart" id="chartOperasional"></div></div>
   </section>
   <section id="categoryDataView" class="card dashboard-category-data" hidden><div class="table-wrap"><table class="data-table"><thead><tr><th>Kategori Belanja</th><th class="num">Jumlah (Rp)</th><th class="num">Proporsi</th></tr></thead><tbody id="categoryDataBody"></tbody></table></div></section>
-  <section class="card dashboard-detail"><div class="toolbar"><div><div class="section-title">Rekap Tersimpan</div><div class="section-sub">Setiap SPMU dihitung berdasarkan kategori dan nilai pembelanjaan yang dipilih saat SPMU disimpan.</div></div><input id="dashSearch" class="search" type="search" placeholder="Cari pekerjaan / kategori / no. bukti…" aria-label="Cari rekap"></div><div class="table-wrap"><table class="data-table"><thead><tr><th>No</th><th>Pekerjaan</th><th>Kategori</th><th>Tanggal Simpan</th><th class="num">Nilai Pengeluaran</th></tr></thead><tbody id="dashboardTableBody"><tr><td colspan="5" class="empty">Belum ada pekerjaan tersimpan.</td></tr></tbody></table></div></section>
+  <section class="card dashboard-detail"><div class="toolbar"><div><div class="section-title">Rekap Tersimpan</div><div class="section-sub">Pantau pekerjaan, tujuan pembayaran, kategori, waktu penyimpanan, dan nilai setiap SPMU. Gunakan pencarian untuk menemukan data tersimpan.</div></div><input id="dashSearch" class="search" type="search" placeholder="Cari pekerjaan / pembayaran / kategori / no. bukti…" aria-label="Cari rekap"></div><div class="table-wrap"><table class="data-table"><thead><tr><th>No</th><th>Pekerjaan</th><th>Untuk Pembayaran</th><th>Kategori</th><th>Tanggal Simpan</th><th class="num">Nilai Pengeluaran</th></tr></thead><tbody id="dashboardTableBody"><tr><td colspan="6" class="empty">Belum ada pekerjaan tersimpan.</td></tr></tbody></table></div></section>
+</div>
+<div id="tabProfil" class="tab-panel profil-group" role="tabpanel">
+<section class="pf-hero"><div><div class="dx-eyebrow"><span class="dx-live"></span>PROFILE SEKOLAH</div><h2>Identitas sekolah untuk seluruh dokumen</h2><p>Data identitas dipakai otomatis pada kop, nomor, isi, dan tanda tangan Surat Perintah serta Kwitansi. Data bertanda <b>OTOMATIS BKU</b> terisi saat BKU dibaca.</p></div><div id="pfHeroStatus" class="pf-hero-status">✓ Profil siap digunakan pada Surat &amp; Kwitansi</div></section>
+<div class="pf-identity-state">
+  <div>
+    <span class="pf-state-dot"></span>
+    <div><b>Status identitas &amp; proses surat</b><small>Informasi ini dipakai otomatis pada Surat Perintah dan Kwitansi.</small></div>
+  </div>
+  <div id="identityStatus" class="auto-status">● Menunggu data identitas BKU. Baca PDF terlebih dahulu.</div>
+</div>
+<div class="pf-grid">
+<section class="pf-card">
+<h3 class="pf-title"><span class="pf-title-icon">ID</span> Identitas Sekolah &amp; Pejabat <span class="pf-title-tag">OTOMATIS BKU</span></h3>
+<div class="pf-fields">
+<div class="field"><label>NPSN <span class="auto-tag">OTOMATIS BKU</span></label><input id="suratNpsn" value="" readonly placeholder="Menunggu data BKU"></div>
+<div class="field"><label>Sekolah <span class="auto-tag">OTOMATIS BKU</span></label><input id="suratSD" value="" autocomplete="organization" readonly placeholder="Menunggu data BKU"></div>
+<div class="field"><label>Kecamatan <span class="auto-tag">OTOMATIS BKU</span></label><input id="suratKecamatan" value="" autocomplete="address-level3" readonly placeholder="Menunggu data BKU"></div>
+<div class="field"><label>Nama Kepala Sekolah <span class="auto-tag">OTOMATIS BKU</span></label><input id="suratKepala" value="" readonly placeholder="Menunggu data BKU"></div>
+<div class="field"><label>NIP Kepala Sekolah <span class="auto-tag">OTOMATIS BKU</span></label><input id="suratNipKepala" value="" readonly placeholder="Menunggu data BKU"></div>
+<div class="field"><label>Nama Bendahara <span class="auto-tag">OTOMATIS BKU</span></label><input id="suratBendahara" value="" readonly placeholder="Menunggu data BKU"></div>
+<div class="field"><label>NIP Bendahara <span class="auto-tag">OTOMATIS BKU</span></label><input id="suratNipBendahara" value="" readonly placeholder="Menunggu data BKU"></div>
+</div>
+</section>
+<section class="pf-card">
+<h3 class="pf-title">Data Surat &amp; Kontak <button id="editProfileBtn" type="button" class="pf-edit-btn" aria-label="Edit Data Surat dan Kontak" title="Edit profil"><span aria-hidden="true">✎</span></button><span id="profileLockStatus" class="pf-lock-status">BELUM DISIMPAN</span></h3>
+<div class="pf-fields">
+<div class="field"><label>Nomor Urut SD</label><input id="suratNomor" value="123" inputmode="numeric" placeholder="Contoh: 123"></div>
+<div class="field"><label>Alamat Sekolah <span class="manual-tag">DAPAT DIUBAH</span></label><input id="suratAlamat" value="" placeholder="Alamat sekolah dari BKU, dapat disesuaikan sebelum cetak"></div>
+<div class="field"><label>Email Sekolah</label><input id="suratEmail" value="sdnkrian20604911@gmail.com"></div>
+<div class="field"><label>NSS</label><input id="suratNss" value="101280409030"></div>
+</div>
+</section>
+<section class="pf-card">
+<h3 class="pf-title"><span class="pf-title-icon">⚙</span> Informasi Proses Surat <span class="pf-title-tag manual">DAPAT DIATUR</span></h3>
+<div id="suratNextInfo" class="surat-next-info pf-process-next">Pilih transaksi BKU untuk mengaktifkan perpindahan surat otomatis.</div>
+<div class="pf-process-grid">
+  <div class="field"><label>Logo Sekolah <span class="manual-tag">PNG</span></label><input id="suratLogoSekolah" type="file" accept="image/png,.png"><div class="small" id="logoSekolahStatus">Belum ada logo sekolah. Pilih file PNG untuk menampilkannya di sisi kanan kop surat.</div></div>
+  <div class="field"><label>Logo Kabupaten Serang <span class="auto-tag">PNG BAWAAN</span></label><div class="logo-kabupaten-status"><img src="assets/logo_kabupaten_serang.png" alt="Logo Kabupaten Serang"><div><b>Logo Kabupaten Serang</b><div class="small">Dipakai otomatis di sisi kiri kop surat.</div></div></div></div>
+  <div class="field"><label>Tanda Tangan Kepala Sekolah</label><input id="suratTandaTangan" type="file" accept="image/png,image/jpeg,image/jpg,image/webp"><div class="small">Upload PNG/JPG/WebP. Berlaku untuk Surat Perintah dan Kwitansi. Jika tidak diunggah, tanda tangan dari template S Perintah tetap digunakan.</div></div>
+  <div class="field"><label>Tanda Tangan Bendahara</label><input id="suratTandaTanganBendahara" type="file" accept="image/png,image/jpeg,image/jpg,image/webp"><div class="small">Upload PNG/JPG/WebP. Hanya tampil di Kwitansi.</div></div>
+</div>
+<div class="pf-process-bottom">
+  <div class="surat-note">Surat dikunci ke <b>A4 portrait (210 × 297 mm)</b>. <b>Harap Dibayar Kepada</b> dan <b>Untuk Pembayaran</b> disimpan <b>terpisah untuk setiap No. Bukti</b>. <b>Uraian</b> dibaca otomatis dari BKU.</div>
+  <button id="saveProfileBtn" type="button" class="btn primary pf-save-btn">💾 Simpan Profil</button>
+</div>
+</section>
+</div>
 </div>
 <div id="tabBku" class="tab-panel bku-group" role="tabpanel">
 <section class="card"><div class="upload-head"><div class="upload-icon">⇧</div><div><div class="section-title">Impor dokumen BKU</div><div class="section-sub">Pilih berkas sumber untuk mulai mengekstrak transaksi.</div></div></div><div class="controls"><input id="fileInput" type="file" accept=".pdf,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"><button id="readBtn" class="btn primary" disabled>◈ &nbsp; BACA DATA</button><button id="saveProjectBtn" class="btn project-save-btn" type="button">💾 &nbsp; SIMPAN PEKERJAAN</button><button id="openProjectBtn" class="btn project-open-trigger" type="button">📂 &nbsp; BUKA PEKERJAAN</button><button id="exportBtn" class="btn success" disabled>⇩ &nbsp; EXPORT EXCEL</button><button id="clearBtn" class="btn secondary">↺ &nbsp; RESET</button></div><div class="project-save-row"><span id="projectSaveName">Belum ada pekerjaan tersimpan.</span><span id="projectSaveStatus" class="project-save-status">Penyimpanan lokal siap digunakan.</span></div><div class="hint" style="margin-top:12px">Format didukung: PDF, XLSX, dan XLS. <b>Hanya BKU Kecamatan Lebak Wangi</b> yang diterima. Baris dengan Pengeluaran &gt; 0 akan diproses, kecuali Tarik Tunai yang merupakan pemindahan dana internal.</div></section>
@@ -72,48 +120,47 @@
 
 <!-- ================= KOLOM KIRI: INFORMASI ================= -->
 <aside class="sv-left">
-<section class="sv-card">
-<h3 class="sv-card-title">Informasi Dokumen</h3>
-<div class="sv-fields">
-<div class="field"><label>NPSN <span class="auto-tag">OTOMATIS BKU</span></label><input id="suratNpsn" value="" readonly></div>
-<div class="field"><label>Sekolah <span class="auto-tag">OTOMATIS BKU</span></label><input id="suratSD" value="" autocomplete="organization" readonly></div>
-<div class="field"><label>Kecamatan <span class="auto-tag">OTOMATIS BKU</span></label><input id="suratKecamatan" value="" autocomplete="address-level3" readonly></div>
-<div class="field"><label>Nama Kepala Sekolah <span class="auto-tag">OTOMATIS BKU</span></label><input id="suratKepala" value="" readonly></div>
-<div class="field"><label>NIP Kepala Sekolah <span class="auto-tag">OTOMATIS BKU</span></label><input id="suratNipKepala" value="" readonly></div>
-<div class="field"><label>Nama Bendahara <span class="auto-tag">OTOMATIS BKU</span></label><input id="suratBendahara" value="" readonly></div>
-<div class="field"><label>NIP Bendahara <span class="auto-tag">OTOMATIS BKU</span></label><input id="suratNipBendahara" value="" readonly></div>
-<div class="field"><label>No. Bukti BKU</label><select id="suratBukti" disabled><option value="">Baca data BKU terlebih dahulu</option></select></div>
-<div class="field"><label>Nomor Urut SD</label><input id="suratNomor" value="123" inputmode="numeric" placeholder="Contoh: 123"></div>
-<div class="field"><label>Tanggal Surat</label><input id="suratTanggal" type="date"></div>
-<div class="field"><label>Alamat Sekolah <span class="manual-tag">DAPAT DIUBAH</span></label><input id="suratAlamat" value="" placeholder="Alamat sekolah dari BKU, dapat disesuaikan sebelum cetak"></div>
-<div class="field"><label>Email Sekolah</label><input id="suratEmail" value="sdnkrian20604911@gmail.com"></div>
-<div class="field"><label>NSS</label><input id="suratNss" value="101280409030"></div>
+<section class="sv-card sv-isi">
+<div class="isi-card-head">
+  <div><div class="isi-kicker">FORMULIR SURAT PERINTAH</div><h3 class="sv-card-title">Isi Surat</h3><p>Isi data berurutan dari transaksi sampai kategori belanja. Data yang bertanda <b>OTOMATIS</b> berasal dari BKU.</p></div>
+  <div class="isi-required-note"><span>●</span> Wajib diisi</div>
+</div>
+<div id="suratIsiForm" class="isi-form">
+  <div class="isi-group">
+    <div class="isi-group-head"><span class="isi-step">1</span><div><b>Transaksi</b><small>Pilih No. Bukti BKU dan tanggal surat</small></div></div>
+    <div class="isi-fields">
+      <div class="field"><label for="suratBukti">No. Bukti BKU <span class="req">*</span></label><select id="suratBukti" disabled><option value="">Baca data BKU terlebih dahulu</option></select></div>
+      <div class="field"><label for="suratTanggal">Tanggal Surat <span class="req">*</span></label><input id="suratTanggal" type="date"></div>
+    </div>
+  </div>
+  <div class="isi-group">
+    <div class="isi-group-head"><span class="isi-step">2</span><div><b>Penerima &amp; Pembayaran</b><small>Diisi manual untuk setiap No. Bukti</small></div></div>
+    <div class="isi-fields">
+      <div class="field"><label for="suratKepada">Harap Dibayar Kepada <span class="req">*</span></label><input id="suratKepada" placeholder="Nama penerima/pihak yang dibayar"></div>
+      <div class="field"><label for="suratUntukPembayaran">Untuk Pembayaran <span class="req">*</span> <span class="manual-tag">INPUT MANUAL</span></label><textarea id="suratUntukPembayaran" placeholder="Tulis tujuan pembayaran secara manual sesuai kebutuhan surat perintah"></textarea></div>
+    </div>
+  </div>
+  <div class="isi-group">
+    <div class="isi-group-head"><span class="isi-step">3</span><div><b>Uraian</b><small>Dibaca otomatis dari data murni BKU</small></div></div>
+    <div class="isi-fields">
+      <div class="field"><label for="suratUraian">Uraian <span class="auto-tag">VERSI 2 • DATA MURNI</span></label><textarea id="suratUraian" readonly placeholder="Uraian transaksi akan diambil dari data murni BKU"></textarea><div class="small">Di surat, uraian dirender sebagai kolom <b>No | Nama Barang / Kegiatan | Harga</b>.</div></div>
+    </div>
+  </div>
+  <div class="isi-group">
+    <div class="isi-group-head"><span class="isi-step">4</span><div><b>Kategori Belanja</b><small>Wajib dipilih sebelum data disimpan</small></div></div>
+    <div class="isi-fields">
+      <div class="category-field surat-category-field"><label for="categorySelect">Kategori Belanja <span class="required">*</span></label><select id="categorySelect" required><option value="">— Pilih kategori belanja —</option><option value="Belanja Modal : Peralatan dan Mesin">Belanja Modal : Peralatan dan Mesin</option><option value="Belanja Modal : Aset Tetap Lainya">Belanja Modal : Aset Tetap Lainya</option><option value="Belanja Operasional : Barang dan Jasa">Belanja Operasional : Barang dan Jasa</option><option value="Belanja Operasional : Pegawai">Belanja Operasional : Pegawai</option></select></div>
+    </div>
+  </div>
+  <div class="isi-footer">
+    <div id="suratSaveChecklist" class="isi-checklist" aria-live="polite"></div>
+    <div id="suratDraftSaveStatus" class="surat-draft-save-status">Belum ada data tersimpan untuk No. Bukti ini.</div>
+    <button id="suratSaveDataBtn" type="button" class="btn isi-save-btn" disabled>💾 Simpan Data SPMU</button>
+  </div>
 </div>
 </section>
 
-<section class="sv-card">
-<h3 class="sv-card-title">Isi Surat</h3>
-<div class="sv-fields">
-<div class="field"><label>Harap Dibayar Kepada</label><input id="suratKepada" placeholder="Nama penerima/pihak yang dibayar"></div>
-<div class="field"><label>Untuk Pembayaran <span class="manual-tag">INPUT MANUAL</span></label><textarea id="suratUntukPembayaran" placeholder="Tulis tujuan pembayaran secara manual sesuai kebutuhan surat perintah"></textarea></div>
-<div class="surat-draft-savebar"><div><b>Data SPMU per No. Bukti</b><div id="suratDraftSaveStatus" class="surat-draft-save-status">Belum ada data tersimpan untuk No. Bukti ini.</div></div><button id="suratSaveDataBtn" type="button" class="btn surat-save-data-btn">💾 Simpan Data SPMU</button></div>
-<div class="field"><label>Uraian <span class="auto-tag">VERSI 2 • DATA MURNI</span></label><textarea id="suratUraian" readonly placeholder="Uraian transaksi akan diambil dari data murni BKU"></textarea><div class="small">Di surat, uraian dirender sebagai kolom <b>No | Nama Barang / Kegiatan | Harga</b> dari data murni (tidak digabung).</div></div>
-<div class="category-field surat-category-field"><label for="categorySelect">Kategori Belanja <span class="required">*</span></label><select id="categorySelect" required><option value="">— Pilih kategori belanja —</option><option value="Belanja Modal : Peralatan dan Mesin">Belanja Modal : Peralatan dan Mesin</option><option value="Belanja Modal : Aset Tetap Lainya">Belanja Modal : Aset Tetap Lainya</option><option value="Belanja Operasional : Barang dan Jasa">Belanja Operasional : Barang dan Jasa</option><option value="Belanja Operasional : Pegawai">Belanja Operasional : Pegawai</option></select><div class="small">Wajib dipilih sebelum data SPMU ini dapat disimpan.</div></div>
-</div>
-</section>
 
-<section class="sv-card">
-<h3 class="sv-card-title">Informasi Proses Surat</h3>
-<div id="identityStatus" class="auto-status">● Menunggu data identitas BKU. Baca PDF terlebih dahulu.</div>
-<div id="suratNextInfo" class="surat-next-info">Pilih transaksi BKU untuk mengaktifkan perpindahan surat otomatis.</div>
-<div class="sv-fields" style="margin-top:14px">
-<div class="field"><label>Logo Sekolah <span class="manual-tag">PNG</span></label><input id="suratLogoSekolah" type="file" accept="image/png,.png"><div class="small" id="logoSekolahStatus">Belum ada logo sekolah. Pilih file PNG untuk menampilkannya di sisi kanan kop surat.</div></div>
-<div class="field"><label>Logo Kabupaten Serang <span class="auto-tag">PNG BAWAAN</span></label><div class="logo-kabupaten-status"><img src="assets/logo_kabupaten_serang.png" alt="Logo Kabupaten Serang"><div><b>Logo Kabupaten Serang</b><div class="small">Dipakai otomatis di sisi kiri kop surat.</div></div></div></div>
-<div class="field"><label>Tanda Tangan Kepala Sekolah</label><input id="suratTandaTangan" type="file" accept="image/png,image/jpeg,image/jpg,image/webp"><div class="small">Upload PNG/JPG/WebP. Berlaku untuk Surat Perintah dan Kwitansi. Jika tidak diunggah, tanda tangan dari template S Perintah tetap digunakan.</div></div>
-<div class="field"><label>Tanda Tangan Bendahara</label><input id="suratTandaTanganBendahara" type="file" accept="image/png,image/jpeg,image/jpg,image/webp"><div class="small">Upload PNG/JPG/WebP. Hanya tampil di Kwitansi (tidak dipakai di Surat Perintah).</div></div>
-</div>
-<div class="surat-note">Surat dikunci ke <b>A4 portrait (210 × 297 mm)</b>. <b>Harap Dibayar Kepada</b> dan <b>Untuk Pembayaran</b> disimpan <b>terpisah untuk setiap No. Bukti</b>; pilih No. Bukti lain untuk mengisi data yang berbeda. <b>Uraian</b> dibaca otomatis dari BKU.</div>
-</section>
 </aside>
 
 <!-- ================= KOLOM KANAN: PRATINJAU ================= -->
@@ -204,6 +251,18 @@
       <span class="small">Catatan: klik <b>Cetak / PDF Massal</b>, lalu pada dialog printer pilih printer biasa atau <b>Save as PDF</b> untuk menyimpan semua surat sekaligus.</span>
       <div class="batch-foot-actions"><button id="batchPrintAction" type="button" class="btn primary" disabled>🖨 Cetak / Simpan PDF Terpilih</button><button id="batchPrintCancel2" type="button" class="btn secondary">Tutup</button></div>
     </div>
+  </div>
+</div>
+
+<div id="suratSavedModal" class="saved-modal" aria-hidden="true">
+  <div class="saved-card" role="alertdialog" aria-modal="true" aria-labelledby="suratSavedTitle">
+    <div class="saved-icon" aria-hidden="true">✓</div>
+    <div id="suratSavedTitle" class="saved-title">Berhasil Disimpan</div>
+    <div class="saved-sub">Data SPMU untuk No. Bukti berikut telah tersimpan.</div>
+    <div class="saved-label">No. Bukti</div>
+    <div id="suratSavedBukti" class="saved-bukti">-</div>
+    <div id="suratSavedMeta" class="saved-meta"></div>
+    <button id="suratSavedOk" type="button" class="btn primary saved-ok">OK</button>
   </div>
 </div>
 

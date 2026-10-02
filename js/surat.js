@@ -57,6 +57,7 @@ function restoreSuratDraft(index){
   if(k)k.value=kepada;
   if(u)u.value=untuk;
   updateSuratDraftStatus();
+  refreshSuratSaveState();
   return draft;
 }
 function updateSuratDraftStatus(message){
@@ -69,6 +70,43 @@ function updateSuratDraftStatus(message){
   el.textContent=saved?`Tersimpan untuk No. Bukti ${saved.bukti||r?.noBukti||'-'}.`:'Belum ada data tersimpan untuk No. Bukti ini.';
   el.className='surat-draft-save-status'+(saved?' ok':'');
 }
+function suratFormChecks(){
+  const idx=Number($('suratBukti')?.value);
+  const hasRow=($('suratBukti')?.value||'')!==''&&Number.isInteger(idx)&&idx>=0&&idx<state.rows.length;
+  const has=id=>String($(id)?.value||'').trim()!=='';
+  return [
+    {label:'No. Bukti',ok:hasRow},
+    {label:'Tanggal Surat',ok:has('suratTanggal')},
+    {label:'Harap Dibayar Kepada',ok:has('suratKepada')},
+    {label:'Untuk Pembayaran',ok:has('suratUntukPembayaran')},
+    {label:'Kategori Belanja',ok:has('categorySelect')}
+  ];
+}
+function refreshSuratSaveState(){
+  const btn=$('suratSaveDataBtn'),box=$('suratSaveChecklist');
+  const checks=suratFormChecks();
+  const missing=checks.filter(c=>!c.ok);
+  if(btn){
+    btn.disabled=missing.length>0;
+    btn.title=missing.length?('Lengkapi dahulu: '+missing.map(c=>c.label).join(', ')):'Simpan data SPMU untuk No. Bukti ini';
+  }
+  if(box){
+    box.innerHTML=missing.length
+      ? '<span class="isi-check-head">Lengkapi untuk menyimpan:</span>'+checks.map(c=>`<span class="isi-chip ${c.ok?'ok':''}">${c.ok?'✓':'○'} ${esc(c.label)}</span>`).join('')
+      : '<span class="isi-check-head ok">✓ Semua isi surat sudah lengkap. Siap disimpan.</span>';
+  }
+}
+function showSuratSavedPopup(draft){
+  const m=$('suratSavedModal'); if(!m)return;
+  const b=$('suratSavedBukti'); if(b)b.textContent=draft?.bukti||'-';
+  const meta=$('suratSavedMeta'); if(meta)meta.textContent=draft?.category||'';
+  m.classList.add('show'); m.setAttribute('aria-hidden','false');
+  $('suratSavedOk')?.focus();
+}
+function hideSuratSavedPopup(){
+  const m=$('suratSavedModal'); if(!m)return;
+  m.classList.remove('show'); m.setAttribute('aria-hidden','true');
+}
 async function saveCurrentSuratData(){
   if(!state.file){window.alert('Pilih/upload BKU terlebih dahulu.');return false;}
   if(!state.rows.length){window.alert('Baca data BKU terlebih dahulu.');return false;}
@@ -79,6 +117,7 @@ async function saveCurrentSuratData(){
   if(typeof ns.saveActiveProjectNow==='function')await ns.saveActiveProjectNow();
   else if(typeof ns.saveCurrentFromUi==='function')await ns.saveCurrentFromUi('');
   updateSuratDraftStatus(`✓ Data No. Bukti ${draft.bukti||'-'} berhasil disimpan.`);
+  showSuratSavedPopup(draft);
   return true;
 }
 function enableSuratSection(){
@@ -92,6 +131,7 @@ function enableSuratSection(){
   setSuratTabLocked(!ready);
   if(!ready)$('suratBukti').innerHTML='<option value="">Tidak ada transaksi BKU yang dapat dibuatkan surat</option>';
   setPajakTabLocked(!ready);
+  refreshSuratSaveState();
 }
 function disableSuratSection(){
   $('suratBukti').disabled=true;$('suratPreviewBtn').disabled=true;if($('kwitansiPreviewBtn'))$('kwitansiPreviewBtn').disabled=true;$('suratPrintBtn').disabled=true;if($('suratBatchPrintBtn'))$('suratBatchPrintBtn').disabled=true;$('suratPrevBtn').disabled=true;$('suratNextBtn').disabled=true;
@@ -99,6 +139,7 @@ function disableSuratSection(){
   $('suratPreview').style.display='none';
   try{ns.suratViewerUpdate();}catch(_){}
   setSuratTabLocked(true); setPajakTabLocked(true);
+  refreshSuratSaveState();
 }
 function rawRowsForSurat(){
   const r=suratRow(); if(!r)return [];
@@ -189,6 +230,7 @@ function syncSurat(){
   if($('suratBatchPrintBtn'))$('suratBatchPrintBtn').disabled=!ready;
   updateSuratNextInfo();
   setSuratTabLocked(!ready);
+  refreshSuratSaveState();
 }
 function readSuratFields(){
   for(const k of SURAT_FIELD_KEYS){
@@ -283,6 +325,7 @@ function fillSurat(){
   restoreSuratDraft(idx);
   renderSurat();
   updateSuratNextInfo();
+  refreshSuratSaveState();
 }
 
 function normalizeSchoolName(v){return clean(v).toLocaleUpperCase('id-ID');}
@@ -582,6 +625,6 @@ function renderSurat(){
 Object.assign(ns,{
   dateToInput,dateDisplay,suratRow,enableSuratSection,disableSuratSection,rawRowsForSurat,suratUraianText,moneyWords,roman,suratData,syncSurat,readSuratFields,updateSuratNextInfo,nextSurat,prevSurat,fillSurat,
   normalizeSchoolName,addressWithKecamatan,splitUraianItems,renderUraianHtml,suratBlock,buildSuratBlocks,createSuratPage,paginateSurat,renderSurat,
-  suratDraftKey,getSuratDraft,captureCurrentSuratDraft,restoreSuratDraft,updateSuratDraftStatus,saveCurrentSuratData,suratDataForIndex,decorateSuratPages,buildSuratPagesForIndex,suratDraftReady
+  refreshSuratSaveState,showSuratSavedPopup,hideSuratSavedPopup,suratDraftKey,getSuratDraft,captureCurrentSuratDraft,restoreSuratDraft,updateSuratDraftStatus,saveCurrentSuratData,suratDataForIndex,decorateSuratPages,buildSuratPagesForIndex,suratDraftReady
 });
 })(window.SPMU=window.SPMU||{});

@@ -2,6 +2,30 @@
 'use strict';
 const {$,state,SURAT_FIELD_KEYS,suratElement,resetAutoIdentity,render,setTab}=ns;
 
+const PROFILE_STORAGE_KEY='siapbos_profile_surat_kontak_v1';
+const profileKeys=['nomor','alamat','email','nss'];
+let profileLocked=false;
+function setProfileLocked(locked){
+  profileLocked=!!locked;
+  for(const key of profileKeys){const el=suratElement(key);if(el)el.readOnly=profileLocked;}
+  const edit=$('editProfileBtn'),save=$('saveProfileBtn'),status=$('profileLockStatus');
+  if(edit){edit.hidden=!profileLocked;edit.title=profileLocked?'Edit Data Surat & Kontak':'Data dapat diedit';}
+  if(save){save.textContent=profileLocked?'✓ Profil Tersimpan':'💾 Simpan Profil';save.classList.toggle('profile-saved',profileLocked);}
+  if(status){status.textContent=profileLocked?'🔒 TERKUNCI':'✎ MODE EDIT';status.classList.toggle('is-locked',profileLocked);}
+}
+function restoreSavedProfile(){
+  try{const saved=JSON.parse(localStorage.getItem(PROFILE_STORAGE_KEY)||'null');if(!saved)return false;
+    for(const key of profileKeys){if(saved[key]!==undefined){state.surat[key]=String(saved[key]??'');const el=suratElement(key);if(el)el.value=state.surat[key];}}
+    setProfileLocked(true);return true;
+  }catch(e){console.warn('Profil tersimpan tidak dapat dibaca',e);return false;}
+}
+restoreSavedProfile();
+$('editProfileBtn')?.addEventListener('click',()=>{setProfileLocked(false);$('suratAlamat')?.focus();});
+$('saveProfileBtn')?.addEventListener('click',()=>{
+  const profile={};for(const key of profileKeys){const el=suratElement(key);profile[key]=String(el?.value??state.surat[key]??'');state.surat[key]=profile[key];}
+  try{localStorage.setItem(PROFILE_STORAGE_KEY,JSON.stringify(profile));setProfileLocked(true);ns.markProjectDirty?.();ns.scheduleProjectAutoSave?.();}
+  catch(e){window.alert('Profil gagal disimpan pada browser: '+(e?.message||e));}
+});
 const workspaceShell=document.querySelector('.workspace-shell');
 const setSidebarCollapsed=(collapsed)=>{
   const isCollapsed=!!collapsed;
@@ -15,6 +39,8 @@ const setSidebarCollapsed=(collapsed)=>{
 };
 $('sidebarToggle')?.addEventListener('click',()=>setSidebarCollapsed(!workspaceShell?.classList.contains('sidebar-collapsed')));
 $('tabDashboardBtn')?.addEventListener('click',()=>{setTab('dashboard');ns.renderDashboard?.();});
+$('tabProfilBtn')?.addEventListener('click',()=>{setTab('profil');});
+
 $('tabBkuBtn').addEventListener('click',()=>{setTab('bku');ns.markProjectDirty?.();});
 $('fileInput').addEventListener('change',e=>{ns.detachActiveProject?.();state.file=e.target.files?.[0]||null;state.category='';if($('categorySelect'))$('categorySelect').value='';state.rows=[];state.rawRows=[];state.result=null;state.surat.bukti='';state.surat.rowIndex=-1;state.surat.kepada='';state.surat.untukPembayaran='';state.suratByBukti={};resetAutoIdentity();$('readBtn').disabled=!state.file;$('status').textContent=state.file?`File dipilih: ${state.file.name}. Tekan BACA DATA untuk menjalankan MR. LOADING.`:'Siap. Pilih dokumen BKU.';ns.disableSuratSection();render();});
 $('categorySelect')?.addEventListener('change',e=>{state.category=String(e.target.value||'');if(state.surat?.rowIndex>=0){ns.captureCurrentSuratDraft?.();}ns.markProjectDirty?.();});
@@ -40,8 +66,13 @@ $('suratSaveDataBtn')?.addEventListener('click',async()=>{
   }catch(e){
     window.alert(e?.message||String(e));
     const st=$('suratDraftSaveStatus');if(st){st.textContent='⚠ Gagal menyimpan data: '+(e?.message||e);st.className='surat-draft-save-status error';}
-  }finally{if(btn)btn.disabled=false;}
+  }finally{ns.refreshSuratSaveState?.();}
 });
+$('suratIsiForm')?.addEventListener('input',()=>ns.refreshSuratSaveState?.());
+$('suratIsiForm')?.addEventListener('change',()=>ns.refreshSuratSaveState?.());
+$('suratSavedOk')?.addEventListener('click',()=>ns.hideSuratSavedPopup?.());
+$('suratSavedModal')?.addEventListener('click',e=>{if(e.target===e.currentTarget)ns.hideSuratSavedPopup?.();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')ns.hideSuratSavedPopup?.();});
 for(const key of SURAT_FIELD_KEYS.filter(k=>k!=='bukti')){
   const el=suratElement(key);
   if(el){const sync=()=>{state.surat[key]=el.value;if(key==='kepada'||key==='untukPembayaran')ns.captureCurrentSuratDraft?.();ns.renderSurat();ns.scheduleProjectAutoSave?.();};el.addEventListener('input',sync);el.addEventListener('change',sync);}
@@ -74,5 +105,6 @@ setTab('dashboard');
 render();
 ns.renderDashboard?.();
 ns.disableSuratSection();
+ns.refreshSuratSaveState?.();
 ns.initProjectStore?.();
 })(window.SPMU=window.SPMU||{});

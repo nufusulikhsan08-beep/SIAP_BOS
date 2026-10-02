@@ -1264,3 +1264,165 @@
 @media(max-width:1050px){.dx-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.dx-row{grid-template-columns:1fr}}
 @media(max-width:520px){.dx-kpis{grid-template-columns:1fr}.dx-donut-wrap{justify-content:center}}
 @media(prefers-reduced-motion:reduce){.dx-live,.dx-col i{animation:none}}
+
+/* ===== PROFIL SEKOLAH ===== */
+#tabProfil{--sv-blue:#1e9bd7;--sv-blue-soft:#e8f5fc;--sv-ink:#111827;--sv-mute:#6b7280;--sv-line:#e6ebf2}
+#tabProfil .pf-hero{margin-bottom:16px;padding:18px 22px;border-radius:16px;background:linear-gradient(135deg,#eaf4fd,#f4f0ff);border:1px solid #dce6f5}
+#tabProfil .pf-hero h2{margin:6px 0 4px;font-size:22px;color:#1f2a5a}
+#tabProfil .pf-hero p{margin:0;font-size:12.5px;line-height:1.6;color:#5b6678;max-width:760px}
+#tabProfil .pf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+#tabProfil .pf-card{background:#fff;border:1px solid var(--sv-line);border-radius:16px;padding:22px;box-shadow:0 4px 18px rgba(30,41,59,.05)}
+#tabProfil .pf-title{margin:0 0 16px;font-size:12.5px;font-weight:600;color:var(--sv-blue)}
+#tabProfil .pf-fields{display:flex;flex-direction:column;gap:15px}
+@media(max-width:1000px){#tabProfil .pf-grid{grid-template-columns:1fr}}
+#tabProfil .field{gap:3px}
+#tabProfil .field label{font-size:11.5px;font-weight:500;color:var(--sv-mute);text-transform:none;letter-spacing:0}
+#tabProfil .field input,#tabProfil .field select,#tabProfil .field textarea{
+  border:0;border-bottom:1px dashed #d3dae6;border-radius:0;background:transparent;padding:3px 0;
+  font-size:12.5px;font-weight:700;color:var(--sv-ink);outline:none;box-shadow:none;transition:border-color .15s,background .15s}
+#tabProfil .field input:hover:not([readonly]),#tabProfil .field select:hover:not(:disabled),#tabProfil .field textarea:hover:not([readonly]){border-bottom-color:#9fb3c8}
+#tabProfil .field input:focus:not([readonly]),#tabProfil .field select:focus,#tabProfil .field textarea:focus:not([readonly]){border-bottom-color:var(--sv-blue);box-shadow:none}
+#tabProfil .field input[readonly],#tabProfil .field textarea[readonly]{border-bottom-color:transparent;background:transparent;color:var(--sv-ink);cursor:default}
+#tabProfil .field select{cursor:pointer;padding-right:4px}
+#tabProfil .field select:disabled{cursor:not-allowed;color:#9aa5b5}
+#tabProfil .field textarea{min-height:56px;padding:8px 10px;border:1px solid var(--sv-line);border-radius:10px;background:#f8fafc;font-weight:600;line-height:1.45}
+#tabProfil .field textarea[readonly]{background:#f8fafc;border-color:var(--sv-line);color:#374151}
+#tabProfil .field textarea:focus:not([readonly]){border-color:var(--sv-blue);background:#fff}
+#tabProfil .field input[type=file]{font-weight:500;font-size:11.5px;border:1px dashed #cfd8e6;border-radius:10px;padding:8px;background:#f8fafc;color:var(--sv-mute)}
+#tabProfil .field .small{font-size:11px;color:#8b95a7;line-height:1.5;margin-top:2px;font-weight:400}
+#tabProfil .auto-tag,#tabProfil .manual-tag{margin-left:5px;padding:1px 6px;font-size:8px;vertical-align:1px}
+#tabProfil .auto-tag{background:var(--sv-blue-soft);color:#187aa8}
+
+/* ===== ISI SURAT (terstruktur) ===== */
+#tabSurat .isi-form{display:flex;flex-direction:column;gap:0}
+#tabSurat .isi-group{padding:14px 0;border-top:1px solid var(--sv-line)}
+#tabSurat .isi-group:first-child{border-top:0;padding-top:0}
+#tabSurat .isi-group-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+#tabSurat .isi-group-head b{display:block;font-size:12.5px;color:var(--sv-ink);font-weight:700}
+#tabSurat .isi-group-head small{display:block;font-size:10.5px;color:#8b95a7;margin-top:1px}
+#tabSurat .isi-step{flex:0 0 auto;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--sv-blue-soft);color:#187aa8;font-size:11px;font-weight:800}
+#tabSurat .isi-fields{display:flex;flex-direction:column;gap:14px}
+#tabSurat .field .req{color:#d43b57;font-weight:800}
+#tabSurat .surat-category-field{margin:0;padding:0;border-top:0;max-width:none}
+#tabSurat .surat-category-field label{font-size:11.5px;font-weight:500;color:var(--sv-mute);margin-bottom:3px}
+#tabSurat .surat-category-field select{padding:9px 10px;font-size:12.5px;font-weight:700;border-radius:10px;background:#f8fafc;border:1px solid var(--sv-line)}
+#tabSurat .isi-footer{margin-top:4px;padding:14px;border:1px solid #dce8f2;border-radius:13px;background:linear-gradient(180deg,#fbfdff,#f3f8fc);display:flex;flex-direction:column;gap:10px}
+#tabSurat .isi-checklist{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+#tabSurat .isi-check-head{width:100%;font-size:11px;font-weight:700;color:#8a5a00}
+#tabSurat .isi-check-head.ok{color:#08784a}
+#tabSurat .isi-chip{padding:2px 9px;border-radius:999px;background:#fff3d6;color:#8a5a00;font-size:10.5px;font-weight:600}
+#tabSurat .isi-chip.ok{background:#e3f6ec;color:#0b7a4b}
+#tabSurat .isi-footer .surat-draft-save-status{margin:0}
+#tabSurat .isi-save-btn{width:100%;background:linear-gradient(135deg,#0f7a5b,#158f6b);color:#fff;border-color:#0f7a5b;padding:11px 14px;font-size:12.5px;font-weight:800}
+#tabSurat .isi-save-btn:disabled{background:#d9dfe8;border-color:#d9dfe8;color:#8b95a7;cursor:not-allowed;box-shadow:none;opacity:1}
+
+/* ===== POPUP BERHASIL DISIMPAN ===== */
+.saved-modal{position:fixed;inset:0;z-index:100001;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(9,18,42,.55);backdrop-filter:blur(6px)}
+.saved-modal.show{display:flex;animation:projectFadeIn .16s ease-out}
+.saved-card{width:min(380px,94vw);padding:28px 26px 24px;text-align:center;background:#fff;border-radius:22px;border:1px solid #d9e3f4;box-shadow:0 28px 80px rgba(16,29,67,.35)}
+.saved-icon{width:62px;height:62px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e3f6ec;color:#0f9b63;font-size:32px;font-weight:900}
+.saved-title{font-size:20px;font-weight:900;color:#223253}
+.saved-sub{margin-top:6px;font-size:12.5px;color:#7987a0;line-height:1.5}
+.saved-label{margin-top:18px;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#8b95a7}
+.saved-bukti{margin-top:4px;padding:10px 14px;border-radius:12px;background:#f1f6fd;border:1px dashed #b8cbe6;font-size:22px;font-weight:900;color:#1f3d8a;letter-spacing:.5px;overflow-wrap:anywhere}
+.saved-meta{margin-top:8px;font-size:11.5px;color:#6b7280;min-height:1em}
+.saved-ok{margin-top:20px;width:100%}
+
+#tabProfil .field input[readonly]{border-bottom:1px dashed #d3dae6;min-height:26px}
+#tabProfil .field input::placeholder{color:#b3bccb;font-weight:500}
+
+/* ==========================================================
+   PROFIL SEKOLAH — tampilan mengikuti referensi UI pengguna
+   ========================================================== */
+#tabProfil{--pf-blue:#2f55d4;--pf-navy:#172653;--pf-line:#e2e8f3;--pf-muted:#7d8aa1;--pf-ink:#18233c}
+#tabProfil .pf-hero{display:flex;justify-content:space-between;align-items:center;gap:22px;margin-bottom:16px;padding:24px 24px;border:0;border-radius:18px;background:linear-gradient(120deg,#14244e 0%,#233b7c 58%,#5368ce 100%);box-shadow:0 12px 30px rgba(35,53,94,.12);color:#fff;position:relative;overflow:hidden}
+#tabProfil .pf-hero:after{content:"";position:absolute;width:300px;height:300px;border:1px solid rgba(255,255,255,.12);border-radius:50%;right:-100px;top:-190px;box-shadow:0 0 0 34px rgba(255,255,255,.05),0 0 0 72px rgba(255,255,255,.03)}
+#tabProfil .pf-hero>div{position:relative;z-index:1}
+#tabProfil .pf-hero .dx-eyebrow{color:#b9c9ff;font-size:10px;letter-spacing:1.7px}
+#tabProfil .pf-hero h2{margin:7px 0 5px;font-size:25px;line-height:1.16;color:#fff;letter-spacing:-.3px}
+#tabProfil .pf-hero p{margin:0;max-width:720px;font-size:12px;line-height:1.6;color:#d6def6}
+#tabProfil .pf-hero-status{flex:0 0 auto;max-width:430px;padding:9px 13px;border-radius:12px;background:#effaf5;color:#08784a;border:1px solid #ccefe0;font-size:11px;font-weight:800;box-shadow:0 6px 16px rgba(0,0,0,.08)}
+#tabProfil .pf-identity-state{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:16px;padding:12px 15px;background:#fff;border:1px solid var(--pf-line);border-radius:14px;box-shadow:0 5px 18px rgba(30,41,59,.04)}
+#tabProfil .pf-identity-state>div:first-child{display:flex;align-items:center;gap:10px}
+#tabProfil .pf-state-dot{width:9px;height:9px;border-radius:50%;background:#26a269;box-shadow:0 0 0 4px #e5f7ee;flex:none}
+#tabProfil .pf-identity-state b{display:block;color:#273654;font-size:11.5px}
+#tabProfil .pf-identity-state small{display:block;color:#8b95a7;font-size:10.5px;margin-top:2px}
+#tabProfil .pf-identity-state .auto-status{margin:0}
+#tabProfil .pf-grid{grid-template-columns:minmax(0,1.18fr) minmax(330px,.82fr);gap:16px;align-items:start}
+#tabProfil .pf-card{padding:20px 21px;border-radius:16px;border:1px solid var(--pf-line);box-shadow:0 7px 22px rgba(30,41,59,.055)}
+#tabProfil .pf-grid>.pf-card:nth-child(3){grid-column:1/-1}
+#tabProfil .pf-title{display:flex;align-items:center;gap:8px;margin:0 0 16px;color:#1f315d;font-size:13px;font-weight:800;letter-spacing:0}
+#tabProfil .pf-title-icon{display:inline-grid;place-items:center;width:25px;height:25px;border-radius:8px;background:#edf2ff;color:#3157ce;font-size:9px;font-weight:900}
+#tabProfil .pf-title-tag{margin-left:auto;padding:4px 7px;border-radius:999px;background:#edf3ff;color:#3761d5;font-size:8px;font-weight:900;letter-spacing:.35px}
+#tabProfil .pf-title-tag.manual{background:#fff3e6;color:#a35b00}
+#tabProfil .pf-grid>.pf-card:first-child .pf-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px;row-gap:14px}
+#tabProfil .pf-grid>.pf-card:nth-child(2) .pf-fields{gap:14px}
+#tabProfil .pf-process-next{margin:0 0 16px;padding:10px 12px;border-radius:10px;background:#f5f8ff;border:1px solid #e2e8f5;color:#64728c;font-size:11px}
+#tabProfil .pf-process-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px}
+#tabProfil .pf-process-grid .field input[type=file]{min-height:42px}
+#tabProfil .pf-process-bottom{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-top:18px;padding-top:15px;border-top:1px solid var(--pf-line)}
+#tabProfil .pf-process-bottom .surat-note{margin:0;max-width:820px}
+#tabProfil .pf-save-btn{flex:none;padding:10px 17px;border-radius:11px;font-size:11.5px;white-space:nowrap}
+#tabProfil .pf-card .field input:not([type=file]),#tabProfil .pf-card .field textarea,#tabProfil .pf-card .field select{min-height:35px}
+#tabProfil .pf-card .field input[readonly]{background:#f5f7fb;border:1px solid #e1e7f0;border-radius:9px;padding:8px 10px;color:#223252}
+#tabProfil .pf-card .field input:not([readonly]):not([type=file]),#tabProfil .pf-card .field select{background:#fff;border:1px solid #dbe3ef;border-radius:9px;padding:8px 10px}
+#tabProfil .pf-card .field input:not([readonly]):not([type=file]):focus,#tabProfil .pf-card .field select:focus{border-color:#7790e8;box-shadow:0 0 0 3px rgba(82,103,214,.09)}
+#tabProfil .logo-kabupaten-status{min-height:42px;border-radius:10px;background:#f7f9fd;border:1px solid #e1e7f0}
+
+/* ==========================================================
+   ISI SURAT — kartu formulir lebih jelas dan tidak membingungkan
+   ========================================================== */
+#tabSurat{--sv-blue:#2e58d6;--sv-blue-soft:#edf2ff;--sv-ink:#17233d;--sv-mute:#71809a;--sv-line:#e1e7f0}
+#tabSurat .sv-layout{grid-template-columns:minmax(390px,450px) minmax(0,1fr);gap:20px}
+#tabSurat .sv-isi{padding:20px 21px}
+#tabSurat .isi-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:4px;padding-bottom:15px;border-bottom:1px solid var(--sv-line)}
+#tabSurat .isi-card-head .sv-card-title{margin:3px 0 4px;font-size:19px;font-weight:850;color:#1b2a4b;letter-spacing:-.2px}
+#tabSurat .isi-card-head p{margin:0;max-width:320px;font-size:11px;line-height:1.55;color:#8793a8}
+#tabSurat .isi-kicker{font-size:9px;font-weight:900;letter-spacing:1.4px;color:#3962d6}
+#tabSurat .isi-required-note{flex:none;padding:6px 9px;border-radius:999px;background:#fff6e8;color:#a35b00;font-size:9.5px;font-weight:800;white-space:nowrap}
+#tabSurat .isi-required-note span{color:#df8b16;margin-right:3px}
+#tabSurat .isi-group{margin:0 0 10px;padding:15px 13px;border:1px solid #e4e9f2;border-radius:13px;background:#fbfcff}
+#tabSurat .isi-group:first-child{margin-top:13px;padding-top:15px}
+#tabSurat .isi-group:last-of-type{margin-bottom:11px}
+#tabSurat .isi-group-head{margin-bottom:11px}
+#tabSurat .isi-step{width:25px;height:25px;background:#eaf0ff;color:#3158d1;border:1px solid #d9e3ff}
+#tabSurat .isi-group-head b{font-size:12px;color:#1f2d49}
+#tabSurat .isi-group-head small{font-size:10.5px;color:#8793a8}
+#tabSurat .isi-fields{gap:11px}
+#tabSurat .isi-group .field label{font-size:10.5px;font-weight:800;color:#67758d}
+#tabSurat .isi-group .field input,#tabSurat .isi-group .field select,#tabSurat .isi-group .field textarea{background:#fff;border:1px solid #dbe3ee;border-radius:9px;padding:9px 10px;font-size:12px;font-weight:600;color:#1e2b46;min-height:37px}
+#tabSurat .isi-group .field input:focus,#tabSurat .isi-group .field select:focus,#tabSurat .isi-group .field textarea:focus{border-color:#6f8ae8;box-shadow:0 0 0 3px rgba(73,98,208,.08);outline:none}
+#tabSurat .isi-group .field textarea{min-height:72px;line-height:1.5;resize:vertical}
+#tabSurat .isi-group .field textarea[readonly]{background:#f3f6fa;border-color:#e1e7f0;color:#4a5871}
+#tabSurat .isi-group .field .small{font-size:10px;line-height:1.45;color:#8b95a7}
+#tabSurat .surat-category-field select{background:#f6f8ff!important;border-color:#aebff4!important;color:#263d88!important;font-weight:800!important}
+#tabSurat .isi-footer{margin-top:0;padding:13px;border-radius:12px;background:linear-gradient(180deg,#f8fbff,#f0f5fb);border:1px solid #dce5f1;gap:9px}
+#tabSurat .isi-save-btn{border-radius:10px;background:linear-gradient(135deg,#3159d9,#5546d8);border-color:#3159d9;padding:11px 14px;font-size:12px;box-shadow:0 7px 16px rgba(49,89,217,.18)}
+#tabSurat .isi-checklist{gap:5px}
+#tabSurat .isi-chip{font-size:9.5px;padding:3px 8px}
+#tabSurat .surat-draft-save-status{font-size:10.5px;color:#7d8aa0}
+@media(max-width:1100px){#tabSurat .sv-layout{grid-template-columns:minmax(340px,410px) minmax(0,1fr)}}
+@media(max-width:900px){#tabProfil .pf-grid>.pf-card:first-child .pf-fields{grid-template-columns:1fr}#tabProfil .pf-process-grid{grid-template-columns:1fr}#tabProfil .pf-process-bottom{align-items:stretch;flex-direction:column}#tabProfil .pf-save-btn{width:100%}#tabProfil .pf-hero{align-items:flex-start;flex-direction:column}#tabProfil .pf-hero-status{max-width:none}#tabProfil .pf-identity-state{align-items:flex-start;flex-direction:column}#tabSurat .sv-layout{grid-template-columns:1fr}#tabSurat .sv-right{position:static}}
+
+#tabProfil .pf-hero-status.warn{background:#fff4e6;color:#9a5a00;border-color:#f2d4a5}
+#tabProfil .pf-save-btn.profile-saved{background:linear-gradient(135deg,#0f8a61,#159a70);border-color:#0f8a61}
+
+/* Rekap tersimpan — tampilan ringkas, mudah dipindai, dan adaptif */
+#tabDashboard .dashboard-detail .table-wrap{overflow:auto;border:1px solid #e5eaf4;border-radius:14px;background:#fff}
+#tabDashboard .dashboard-detail .data-table{min-width:820px;border-collapse:separate;border-spacing:0}
+#tabDashboard .dashboard-detail .data-table thead th{position:sticky;top:0;z-index:1;background:#f1f5fc;color:#4a5875;font-size:11px;font-weight:900;letter-spacing:.045em;text-transform:uppercase;padding:13px 14px;border-bottom:1px solid #dfe6f2}
+#tabDashboard .dashboard-detail .data-table tbody td{padding:13px 14px;vertical-align:middle;border-bottom:1px solid #edf1f7;font-size:12px}
+#tabDashboard .dashboard-detail .data-table tbody tr:not(.dash-total-row):hover{background:#eef5ff}
+#tabDashboard .dash-job-name{font-weight:850;color:#24365e;line-height:1.45;overflow-wrap:anywhere}
+#tabDashboard .dash-payment-purpose{max-width:360px;min-width:180px;white-space:normal;line-height:1.5;color:#52617d;overflow-wrap:anywhere}
+#tabDashboard .dashboard-detail .data-table .small{margin-top:4px;color:#8994a9;font-size:10px}
+#tabDashboard .dashboard-detail .data-table td.num{font-weight:850;color:#24365e;white-space:nowrap;font-variant-numeric:tabular-nums}
+#tabDashboard .dashboard-detail .dash-total-row td{position:sticky;bottom:0;background:#eaf0fc;color:#1c3268;font-weight:900;border-top:2px solid #c8d5f1;border-bottom:0;padding-top:14px;padding-bottom:14px}
+
+/* Data Surat & Kontak: mode terkunci dan edit eksplisit */
+#tabProfil .pf-edit-btn{margin-left:auto;display:inline-grid;place-items:center;width:30px;height:30px;border:1px solid #d7e1f4;border-radius:9px;background:#f4f7ff;color:#3157ce;font-size:19px;line-height:1;cursor:pointer;transition:transform .18s ease,background .18s ease,box-shadow .18s ease}
+#tabProfil .pf-edit-btn:hover{background:#e8efff;transform:scale(1.06);box-shadow:0 4px 12px #3157ce22}
+#tabProfil .pf-edit-btn[hidden]{display:none}
+#tabProfil .pf-lock-status{margin-left:4px;padding:5px 8px;border-radius:999px;background:#fff4df;color:#986000;font-size:8px;font-weight:900;letter-spacing:.35px;white-space:nowrap}
+#tabProfil .pf-lock-status.is-locked{background:#e7f8ef;color:#16804c}
+#tabProfil .pf-card:nth-child(2) input[readonly]{background:#f2f5fa;border-color:#e1e7f0;color:#52617a;cursor:default}

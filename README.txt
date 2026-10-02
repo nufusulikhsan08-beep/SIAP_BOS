@@ -207,3 +207,12 @@ PERBAIKAN V3:
 - Kolom PDF BKU dikunci mengikuti geometri template A4 yang sebenarnya; header tengah 'URAIAN' tidak lagi dipakai sebagai batas kolom.
 - Memperbaiki transaksi Internet Berlangganan yang sebelumnya terlewat pada halaman yang memiliki header.
 - Pemulihan transaksi (recovery) tetap aktif untuk baris yang teks PDF-nya terpecah.
+
+
+UPDATE — 2 OKTOBER 2026: TAB PROFIL & ISI SURAT TERSTRUKTUR
+- Ditambahkan tab PROFIL di sidebar. Seluruh data sekolah (NPSN, Sekolah, Kecamatan, Kepala Sekolah + NIP, Bendahara + NIP, Nomor Urut SD, Alamat, Email, NSS) dipindahkan ke tab ini. ID input tidak berubah, sehingga pembacaan BKU, kop surat, dan Kwitansi tetap bekerja.
+- Panel "Informasi Dokumen" dihapus dari tab Surat Perintah. No. Bukti BKU dan Tanggal Surat tetap ada, kini di bagian Isi Surat.
+- Isi Surat dibagi 4 langkah: (1) Transaksi, (2) Penerima & Pembayaran, (3) Uraian, (4) Kategori Belanja.
+- Tombol "Simpan Data SPMU" kini berada di bagian paling bawah dan baru aktif setelah No. Bukti, Tanggal, Harap Dibayar Kepada, Untuk Pembayaran, dan Kategori Belanja terisi. Checklist menunjukkan bagian yang belum lengkap.
+- Setelah berhasil disimpan, tampil popup berisi No. Bukti (tutup dengan OK, klik area luar, atau Esc).
+- File yang berubah: index.html, styles.css, js/core.js, js/surat.js, js/main.js.
