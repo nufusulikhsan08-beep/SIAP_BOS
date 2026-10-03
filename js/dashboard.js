@@ -29,30 +29,6 @@ function barHtml(label,value,max){
   const pct=max>0?Math.max(0,Math.min(100,value/max*100)):0;
   return `<div class="dash-bar-row"><div class="dash-bar-label"><span>${ns.esc(label)}</span><b>${money(value)}</b></div><div class="dash-bar-track"><i style="width:${pct}%;${value<=0?'min-width:0;':''}"></i></div></div>`;
 }
-function renderTaxChart(siplah,nonSiplah,grandTotal,bkuCount){
-  const total=Math.max(0,Number(grandTotal)||0);
-  const sip=Math.max(0,Number(siplah)||0);
-  const non=Math.max(0,Number(nonSiplah)||0);
-  const sipPct=total>0?(sip/total*100):0;
-  const nonPct=total>0?(non/total*100):0;
-  const fmtPct=v=>v.toLocaleString('id-ID',{maximumFractionDigits:1})+'%';
-  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-  set('dashTaxTotalChart',money(total));
-  set('dashTaxCountChart',bkuCount+' BKU tersimpan');
-  set('dashTaxSiplahPct',fmtPct(sipPct));
-  set('dashTaxNonSiplahPct',fmtPct(nonPct));
-  set('dashTaxSiplahShare',money(sip)+' dari total pajak');
-  set('dashTaxNonSiplahShare',money(non)+' dari total pajak');
-  set('dashTaxChartNote',total>0?'SIPLah '+fmtPct(sipPct)+' • Non-SIPLah '+fmtPct(nonPct):'Belum ada transaksi pajak');
-  const rs=document.getElementById('dashTaxRingSiplah');
-  const rn=document.getElementById('dashTaxRingNonSiplah');
-  const bs=document.getElementById('dashTaxBarSiplah');
-  const bn=document.getElementById('dashTaxBarNonSiplah');
-  if(rs){rs.style.strokeDasharray=`${sipPct} ${100-sipPct}`;rs.style.strokeDashoffset='0';}
-  if(rn){rn.style.strokeDasharray=`${nonPct} ${100-nonPct}`;rn.style.strokeDashoffset=`-${sipPct}`;}
-  if(bs)bs.style.width=sipPct+'%';
-  if(bn)bn.style.width=nonPct+'%';
-}
 let allItems=[];
 function drawTable(){
   const tbody=document.getElementById('dashboardTableBody');if(!tbody)return;
@@ -75,7 +51,7 @@ async function renderDashboard(){
     const taxSummary=projects.reduce((a,p)=>{const t=typeof ns.getTaxSummary==='function'?ns.getTaxSummary(Array.isArray(p?.state?.rawRows)?p.state.rawRows:[]):{};a.siplah+=Number(t.siplahTotal)||0;a.non+=Number(t.nonSiplahTotal)||0;a.grandTotal+=Number(t.grandTotal)||0;return a;},{siplah:0,non:0,grandTotal:0});
     const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v};
     set('dashProjectCount',savedSPMUs.length);set('dashModalTotal',money(sums[CATEGORY.modalMesin]+sums[CATEGORY.modalLain]));
-    set('dashOperasionalTotal',money(sums[CATEGORY.operBarang]+sums[CATEGORY.operPegawai]));set('dashTaxSiplah',money(taxSummary.siplah));set('dashTaxNonSiplah',money(taxSummary.non));set('dashTaxTotal',money(taxSummary.grandTotal));set('dashTaxDetail','Akumulasi dari '+projects.length+' BKU tersimpan • SIPLah '+money(taxSummary.siplah)+' • Non SIPLah '+money(taxSummary.non));renderTaxChart(taxSummary.siplah,taxSummary.non,taxSummary.grandTotal,projects.length);set('dashUpdated','Diperbarui '+new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})+' • '+projects.length+' pekerjaan');
+    set('dashOperasionalTotal',money(sums[CATEGORY.operBarang]+sums[CATEGORY.operPegawai]));set('dashTaxSiplah',money(taxSummary.siplah));set('dashTaxNonSiplah',money(taxSummary.non));set('dashTaxTotal',money(taxSummary.grandTotal));set('dashTaxDetail','Akumulasi dari '+projects.length+' BKU tersimpan • SIPLah '+money(taxSummary.siplah)+' • Non SIPLah '+money(taxSummary.non));set('dashUpdated','Diperbarui '+new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})+' • '+projects.length+' pekerjaan');
     const cm=document.getElementById('chartModal'),co=document.getElementById('chartOperasional');
     const categoryRows=Object.entries(sums); const categoryTotal=categoryRows.reduce((a,[,v])=>a+v,0);
     const dataBody=document.getElementById('categoryDataBody');

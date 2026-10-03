@@ -382,11 +382,57 @@ async function makePortableObject(p){
     state:p.state||{}
   };
 }
+function triggerBlobDownload(blob,fileName){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+function safeFileName(name,fallback){
+  return (String(name||'').replace(/[\\/:*?"<>|]+/g,'_').trim()||fallback);
+}
 async function downloadProject(id){
   const p=await getProject(id);if(!p)throw new Error('Pekerjaan tidak ditemukan.');
   const portable=await makePortableObject(p);
   const blob=new Blob([JSON.stringify(portable)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(String(p.name||'SPMU_Pekerjaan').replace(/[\\/:*?"<>|]+/g,'_')||'SPMU_Pekerjaan')+'.spmu';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  triggerBlobDownload(blob,safeFileName(p.name,'SPMU_Pekerjaan')+'.spmu');
+}
+async function downloadAllProjects(){
+  // Pastikan pekerjaan aktif yang sudah tersimpan dan masih berubah ikut masuk.
+  if(activeProjectId&&ns.state?.file&&ns.state?._projectDirty){
+    await saveActiveProjectNow();
+  }
+  const summaries=await getAllProjects();
+  const projects=[];
+  for(const summary of summaries){
+    // Fallback localStorage hanya memberi ringkasan melalui getAllProjects();
+    // ambil data lengkap agar file BKU + seluruh hasil kerja tetap tercadangkan.
+    const full=await getProject(summary.id);
+    projects.push(full||summary);
+  }
+  // Sertakan pekerjaan aktif yang belum pernah disimpan sebagai project lokal.
+  if(!activeProjectId&&ns.state?.file){
+    projects.push(await buildPayload(baseName()));
+  }
+  if(!projects.length)throw new Error('Belum ada pekerjaan tersimpan untuk dicadangkan.');
+  const portableProjects=[];
+  for(const project of projects)portableProjects.push(await makePortableObject(project));
+  const payload={
+    format:'SPMU_PROJECTS_BACKUP',
+    version:1,
+    app:'SIAP BOS',
+    createdAt:Date.now(),
+    count:portableProjects.length,
+    projects:portableProjects
+  };
+  const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
+  const stamp=new Date().toISOString().slice(0,10);
+  triggerBlobDownload(blob,`SIAP_BOS_CADANGAN_SEMUA_${stamp}.spmu`);
+  return projects.length;
 }
 
 function closeProjectDialog(){const o=q('projectModal');if(o){o.classList.remove('show');o.setAttribute('aria-hidden','true')}}
@@ -414,15 +460,44 @@ function detachActiveProject(){
   setText('projectSaveName','Pekerjaan baru belum disimpan.');
   setSaveStatus('Pekerjaan baru — belum disimpan.','warn');
 }
+async function importPortableProject(p,indexOffset=0){
+  if(!p||!p.file?.dataUrl)throw new Error(`Data pekerjaan ke-${indexOffset+1} tidak valid.`);
+  const blob=await dataUrlToBlob(p.file.dataUrl,p.file.type);
+  const payload={
+    id:p.id||('p_'+Date.now()+'_'+Math.random().toString(36).slice(2,8)),
+    name:p.name||'Pekerjaan BKU',
+    createdAt:p.createdAt||Date.now(),
+    updatedAt:Date.now(),
+    version:3,
+    file:{name:p.file.name||'BKU',type:p.file.type||'',size:p.file.size||blob.size,lastModified:p.file.lastModified||Date.now(),blob},
+    state:p.state||{}
+  };
+  await writeProject(payload);
+  return payload;
+}
 async function importProjectFile(file){
   if(!file)throw new Error('Pilih file .spmu terlebih dahulu.');
   const text=await file.text();
   const p=JSON.parse(text);
+  if(p.format==='SPMU_PROJECTS_BACKUP'){
+    if(!Array.isArray(p.projects)||!p.projects.length)throw new Error('Cadangan semua pekerjaan kosong atau tidak valid.');
+    let last=null;
+    for(let i=0;i<p.projects.length;i++)last=await importPortableProject(p.projects[i],i);
+    if(last){
+      activeProjectId=last.id;
+      activeProjectName=last.name;
+      await loadProject(last.id);
+    }
+    ns.renderDashboard?.();
+    return {count:p.projects.length,last};
+  }
   if(p.format!=='SPMU_PROJECT'||!p.file?.dataUrl)throw new Error('File .spmu tidak valid.');
-  const blob=await dataUrlToBlob(p.file.dataUrl,p.file.type);
-  const payload={id:p.id||('p_'+Date.now()),name:p.name||'Pekerjaan BKU',createdAt:p.createdAt||Date.now(),updatedAt:Date.now(),version:3,file:{name:p.file.name||'BKU',type:p.file.type||'',size:p.file.size||blob.size,lastModified:p.file.lastModified||Date.now(),blob},state:p.state||{}};
-  await writeProject(payload);
-  activeProjectId=payload.id;activeProjectName=payload.name;markSaved(payload,'Import .SPMU');await loadProject(payload.id);ns.renderDashboard?.();return payload;
+  const payload=await importPortableProject(p);
+  activeProjectId=payload.id;activeProjectName=payload.name;
+  markSaved(payload,'Import .SPMU');
+  await loadProject(payload.id);
+  ns.renderDashboard?.();
+  return payload;
 }
 
 async function initProjectStore(){
@@ -447,6 +522,27 @@ async function initProjectStore(){
   const backupInput=q('projectImportInput');
   if(backupInput)backupInput.addEventListener('change',async e=>{try{await importProjectFile(e.target.files?.[0]);showProjectDialog('open')}catch(err){window.alert(normalizeError(err))}finally{e.target.value=''}});
   const backupButton=q('projectImportBtn');if(backupButton)backupButton.addEventListener('click',()=>backupInput?.click());
+  const backupAllButton=q('projectBackupAllBtn');
+  const backupAllMainButton=q('projectBackupAllMainBtn');
+  const runBackupAll=async(button)=>{
+    try{
+      if(button)button.disabled=true;
+      if(backupAllButton&&button!==backupAllButton)backupAllButton.disabled=true;
+      if(backupAllMainButton&&button!==backupAllMainButton)backupAllMainButton.disabled=true;
+      const count=await downloadAllProjects();
+      setSaveStatus(`✓ ${count} pekerjaan dicadangkan`,'ok');
+      const status=q('projectBackupAllStatus');
+      if(status)status.textContent=`Cadangan ${count} pekerjaan berhasil dibuat.`;
+    }catch(err){
+      setSaveStatus('⚠ Cadangan semua gagal: '+normalizeError(err),'error');
+      window.alert(normalizeError(err));
+    }finally{
+      if(backupAllButton)backupAllButton.disabled=false;
+      if(backupAllMainButton)backupAllMainButton.disabled=false;
+    }
+  };
+  if(backupAllButton)backupAllButton.addEventListener('click',()=>runBackupAll(backupAllButton));
+  if(backupAllMainButton)backupAllMainButton.addEventListener('click',()=>runBackupAll(backupAllMainButton));
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeProjectDialog()});
 
   try{
@@ -463,6 +559,6 @@ async function initProjectStore(){
 Object.assign(ns,{
   initProjectStore,showProjectDialog,closeProjectDialog,loadProject,saveCurrentFromUi,saveActiveProjectNow,
   markProjectDirty:markDirty,scheduleProjectAutoSave:scheduleAutoSave,scheduleAutoSave,
-  getActiveProjectId:()=>activeProjectId,getAllProjects,getProject,detachActiveProject,importProjectFile
+  getActiveProjectId:()=>activeProjectId,getAllProjects,getProject,detachActiveProject,importProjectFile,downloadAllProjects
 });
 })(window.SPMU=window.SPMU||{});

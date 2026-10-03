@@ -385,8 +385,13 @@
 .project-empty{padding:36px 18px;text-align:center;border:1px dashed #d9e2ef;border-radius:15px;color:#8591a7;background:#fafcff;font-size:13px}
 .project-empty.error{color:#a42d2d;background:#fff5f4;border-color:#ffd0cc}
 .project-modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;border-top:1px solid #e8edf5;background:#fbfcff}
+.project-backup-all-status{margin-top:4px;font-size:10.5px;color:#71809a;line-height:1.4}
+.project-backup-all-btn{background:linear-gradient(135deg,#294ca4,#3c63c8);color:#fff;border-color:#294ca4;box-shadow:0 6px 16px rgba(41,76,164,.16);font-weight:800}
+.controls .project-backup-all-btn{box-shadow:none}
+.project-backup-all-btn:disabled{opacity:.65;cursor:wait}
+.project-foot-actions{justify-content:flex-end}
 @keyframes projectFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:650px){.project-save-input-row{flex-direction:column;align-items:stretch}.project-save-input-row .btn{width:100%}.project-item{align-items:stretch;flex-direction:column}.project-actions{width:100%}.project-actions .btn{flex:1}.project-modal-foot{align-items:stretch;flex-direction:column}.project-modal-foot .btn{width:100%}}
+@media(max-width:650px){.project-save-input-row{flex-direction:column;align-items:stretch}.project-save-input-row .btn{width:100%}.project-item{align-items:stretch;flex-direction:column}.project-actions{width:100%}.project-actions .btn{flex:1}.project-modal-foot{align-items:stretch;flex-direction:column}.project-foot-actions{width:100%;align-items:stretch}.project-foot-actions .btn{flex:1}.project-modal-foot .btn{min-width:0}}
 
 
 /* ==========================================================
@@ -1428,39 +1433,3 @@
 #tabDashboard .dx-tax-nonsiplah{border-color:#d8efdf;background:linear-gradient(145deg,#fff,#f4fbf6)}
 #tabDashboard .dx-tax-nonsiplah b{color:#14865a}
 @media(max-width:650px){#tabDashboard .dx-tax-recap{grid-template-columns:1fr}}
-
-/* ===== REKAP PAJAK DINAMIS ===== */
-#tabDashboard .dx-tax-chart{display:grid;grid-template-columns:minmax(210px,.85fr) minmax(250px,1.15fr);gap:22px;align-items:center;margin-top:18px}
-#tabDashboard .dx-tax-visual{display:grid;place-items:center;min-height:248px}
-#tabDashboard .dx-tax-donut{position:relative;width:min(238px,100%);aspect-ratio:1;filter:drop-shadow(0 12px 22px rgba(32,54,96,.10))}
-#tabDashboard .dx-tax-donut svg{display:block;width:100%;height:100%;transform:rotate(-90deg)}
-#tabDashboard .tax-ring-bg{fill:none;stroke:#edf1f7;stroke-width:18}
-#tabDashboard .tax-ring{fill:none;stroke-width:18;stroke-linecap:round;transition:stroke-dasharray .8s ease,stroke-dashoffset .8s ease,opacity .2s ease}
-#tabDashboard .tax-ring-siplah{stroke:#3159d9}
-#tabDashboard .tax-ring-nonsiplah{stroke:#10a36b}
-#tabDashboard .dx-tax-donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px}
-#tabDashboard .dx-tax-donut-center span{text-transform:uppercase;letter-spacing:1.6px;font-size:9.5px;font-weight:900;color:#8a95a8}
-#tabDashboard .dx-tax-donut-center b{margin-top:7px;font-size:clamp(16px,2vw,22px);line-height:1.2;letter-spacing:-.3px;color:#172546;overflow-wrap:anywhere}
-#tabDashboard .dx-tax-donut-center small{margin-top:6px;font-size:10px;color:#8b96aa}
-#tabDashboard .dx-tax-breakdown{display:grid;gap:12px}
-#tabDashboard .dx-tax-stat{padding:14px 15px;border:1px solid #e4e9f2;border-radius:15px;background:#fbfcfe;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
-#tabDashboard .dx-tax-stat:hover{transform:translateY(-2px);box-shadow:0 9px 22px rgba(29,49,91,.07)}
-#tabDashboard .dx-tax-stat-head{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11px;font-weight:850;color:#5f6d84}
-#tabDashboard .dx-tax-stat-head span{display:flex;align-items:center;gap:8px}
-#tabDashboard .dx-tax-stat-head span i{width:9px;height:9px;border-radius:50%;display:inline-block;box-shadow:0 0 0 4px rgba(49,89,217,.10)}
-#tabDashboard .dx-tax-stat-head b{font-size:12px;color:#21345f;font-variant-numeric:tabular-nums}
-#tabDashboard .dx-tax-stat strong{display:block;margin-top:7px;font-size:17px;line-height:1.25;color:#1d2d4f;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-#tabDashboard .dx-tax-track{height:7px;margin:10px 0 7px;border-radius:999px;background:#edf1f7;overflow:hidden}
-#tabDashboard .dx-tax-track i{display:block;width:0;height:100%;border-radius:inherit;transition:width .8s cubic-bezier(.2,.75,.25,1)}
-#tabDashboard .dx-tax-stat small{font-size:9.5px;color:#8b96aa}
-#tabDashboard .dx-tax-stat.dx-tax-siplah{border-color:#d8e3fb;background:linear-gradient(145deg,#fff,#f5f8ff)}
-#tabDashboard .dx-tax-stat.dx-tax-siplah .dx-tax-stat-head span i,#tabDashboard .dx-tax-stat.dx-tax-siplah .dx-tax-track i{background:#3159d9;box-shadow:none}
-#tabDashboard .dx-tax-stat.dx-tax-siplah .dx-tax-stat-head b,#tabDashboard .dx-tax-stat.dx-tax-siplah strong{color:#3159d9}
-#tabDashboard .dx-tax-stat.dx-tax-nonsiplah{border-color:#d7eee3;background:linear-gradient(145deg,#fff,#f4fbf7)}
-#tabDashboard .dx-tax-stat.dx-tax-nonsiplah .dx-tax-stat-head span i,#tabDashboard .dx-tax-stat.dx-tax-nonsiplah .dx-tax-track i{background:#10a36b;box-shadow:none}
-#tabDashboard .dx-tax-stat.dx-tax-nonsiplah .dx-tax-stat-head b,#tabDashboard .dx-tax-stat.dx-tax-nonsiplah strong{color:#128159}
-#tabDashboard .dx-tax-total{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;border-radius:12px;background:#f3f6fb;border:1px solid #e1e7f1;color:#6d7890;font-size:10px;font-weight:800}
-#tabDashboard .dx-tax-total b{color:#34445f;font-size:10.5px;text-align:right;font-variant-numeric:tabular-nums}
-@media(max-width:850px){#tabDashboard .dx-tax-chart{grid-template-columns:1fr}#tabDashboard .dx-tax-visual{min-height:228px}#tabDashboard .dx-tax-donut{width:220px}}
-@media(max-width:520px){#tabDashboard .dx-tax-chart{gap:12px}#tabDashboard .dx-tax-visual{min-height:210px}#tabDashboard .dx-tax-donut{width:198px}#tabDashboard .tax-ring{stroke-width:16}#tabDashboard .tax-ring-bg{stroke-width:16}}
-@media(prefers-reduced-motion:reduce){#tabDashboard .tax-ring,#tabDashboard .dx-tax-track i{transition:none}#tabDashboard .dx-tax-stat{transition:none}}
