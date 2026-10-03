@@ -558,7 +558,7 @@
 .sidebar-collapsed-title > span{
   writing-mode:vertical-rl;
   transform:rotate(180deg);
-  font-size:clamp(20px,6vw,34px);
+  font-size:clamp(40px,12vw,68px);
   letter-spacing:.16em;
   white-space:normal;
   text-align:center;
