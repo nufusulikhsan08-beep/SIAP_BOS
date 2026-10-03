@@ -47,7 +47,16 @@
   </section>
   <section class="dx-row">
     <div class="card dash-composition-card dx-donut-card"><div class="section-title">Komposisi Belanja</div><div class="section-sub">Porsi tiap kategori terhadap total pengeluaran SPMU tersimpan.</div><div id="dashComposition"></div></div>
-    <div class="card dx-tax-recap-card"><div class="section-title">Rekap Pajak</div><div class="section-sub">Akumulasi pajak dari seluruh BKU tersimpan.</div><div class="dx-tax-recap"><div class="dx-tax-box dx-tax-siplah"><span>Jumlah Pajak Siplah</span><b id="dashTaxSiplah">Rp 0</b><small>Transaksi SIPLah</small></div><div class="dx-tax-box dx-tax-nonsiplah"><span>Jumlah Pajak Non-Siplah</span><b id="dashTaxNonSiplah">Rp 0</b><small>Transaksi Non-SIPLah</small></div></div></div>
+    <div class="card dx-tax-recap-card"><div class="section-title">Rekap Pajak</div><div class="section-sub">Perbandingan akumulasi pajak SIPLah dan Non-SIPLah dari seluruh BKU tersimpan.</div><div id="dashTaxChart" class="dx-tax-chart" aria-label="Grafik rekap pajak">
+      <div class="dx-tax-visual">
+        <div class="dx-tax-donut" aria-hidden="true"><svg viewBox="0 0 240 240" role="img"><circle class="tax-ring-bg" cx="120" cy="120" r="78" pathLength="100"></circle><circle id="dashTaxRingSiplah" class="tax-ring tax-ring-siplah" cx="120" cy="120" r="78" pathLength="100"></circle><circle id="dashTaxRingNonSiplah" class="tax-ring tax-ring-nonsiplah" cx="120" cy="120" r="78" pathLength="100"></circle></svg><div class="dx-tax-donut-center"><span>Total Pajak</span><b id="dashTaxTotalChart">Rp 0</b><small id="dashTaxCountChart">0 BKU tersimpan</small></div></div>
+      </div>
+      <div class="dx-tax-breakdown">
+        <div class="dx-tax-stat dx-tax-siplah"><div class="dx-tax-stat-head"><span><i></i> Pajak SIPLah</span><b id="dashTaxSiplahPct">0%</b></div><strong id="dashTaxSiplah">Rp 0</strong><div class="dx-tax-track"><i id="dashTaxBarSiplah"></i></div><small id="dashTaxSiplahShare">0 dari total pajak</small></div>
+        <div class="dx-tax-stat dx-tax-nonsiplah"><div class="dx-tax-stat-head"><span><i></i> Pajak Non-SIPLah</span><b id="dashTaxNonSiplahPct">0%</b></div><strong id="dashTaxNonSiplah">Rp 0</strong><div class="dx-tax-track"><i id="dashTaxBarNonSiplah"></i></div><small id="dashTaxNonSiplahShare">0 dari total pajak</small></div>
+        <div class="dx-tax-total"><span>Total</span><b id="dashTaxChartNote">SIPLah + Non-SIPLah</b></div>
+      </div>
+    </div></div>
   </section>
   <section class="card dashboard-view-controls"><div><div class="section-title">Kategori Belanja</div><div class="section-sub">Pilih tampilan grafik dinamis atau rekap angka per kategori.</div></div><div class="view-switch" role="group" aria-label="Tampilan kategori belanja"><button type="button" class="view-switch-btn active" data-view="chart">▥ Grafik</button><button type="button" class="view-switch-btn" data-view="data">▤ Data</button></div></section>
   <section id="categoryChartView" class="dashboard-grid">
