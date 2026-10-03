@@ -690,7 +690,7 @@
   .workspace-shell.sidebar-collapsed .sidebar-collapsed-title > span{
     writing-mode:vertical-rl;
     transform:rotate(180deg);
-    font-size:10px;
+    font-size:15px;
     line-height:1.15;
     letter-spacing:.12em;
     white-space:nowrap;
