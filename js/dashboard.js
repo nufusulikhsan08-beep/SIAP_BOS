@@ -30,16 +30,21 @@ function barHtml(label,value,max){
   return `<div class="dash-bar-row"><div class="dash-bar-label"><span>${ns.esc(label)}</span><b>${money(value)}</b></div><div class="dash-bar-track"><i style="width:${pct}%;${value<=0?'min-width:0;':''}"></i></div></div>`;
 }
 let allItems=[];
+let categoryFilter='all';
 function drawTable(){
   const tbody=document.getElementById('dashboardTableBody');if(!tbody)return;
   const q=(document.getElementById('dashSearch')?.value||'').trim().toLowerCase();
-  const items=allItems.filter(it=>!q||[it.projectName,it.untukPembayaran,it.category,it.bukti].join(' ').toLowerCase().includes(q));
+  const items=allItems.filter(it=>(categoryFilter==='all'||it.category===categoryFilter)&&(!q||[it.projectName,it.untukPembayaran,it.category,it.bukti].join(' ').toLowerCase().includes(q)));
   if(!allItems.length){tbody.innerHTML='<tr><td colspan="6" class="empty">Belum ada SPMU tersimpan. Simpan data SPMU dari Tab SURAT PERINTAH.</td></tr>';return;}
   if(!items.length){tbody.innerHTML='<tr><td colspan="6" class="empty">Tidak ada data yang cocok dengan pencarian.</td></tr>';return;}
   const total=items.reduce((a,x)=>a+x.nominal,0);
   tbody.innerHTML=items.map((item,i)=>`<tr><td>${i+1}</td><td><div class="dash-job-name">${ns.esc(item.projectName)}</div>${item.bukti?`<div class="small">No. Bukti: ${ns.esc(item.bukti)}</div>`:''}</td><td><div class="dash-payment-purpose">${ns.esc(item.untukPembayaran||'— Belum diisi —')}</div></td><td>${pill(item.category)}</td><td>${item.savedAt?new Date(item.savedAt).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-'}</td><td class="num">${money(item.nominal)}</td></tr>`).join('')+`<tr class="dash-total-row"><td colspan="5">Total ${items.length} SPMU</td><td class="num">${money(total)}</td></tr>`;
 }
 document.getElementById('dashSearch')?.addEventListener('input',drawTable);
+document.getElementById('dashCategoryFilter')?.addEventListener('change',e=>{categoryFilter=e.target.value||'all';drawTable();});
+document.getElementById('dashGoBku')?.addEventListener('click',()=>{ns.setTab?.('bku');});
+document.getElementById('dashGoSurat')?.addEventListener('click',()=>{const b=document.getElementById('tabSuratBtn');if(b&&!b.disabled)b.click();else window.alert('Tab Surat Perintah akan aktif setelah data BKU selesai dibaca.');});
+document.getElementById('dashGoPajak')?.addEventListener('click',()=>{const b=document.getElementById('tabPajakBtn');if(b&&!b.disabled)b.click();else window.alert('Tab Hitung Pajak akan aktif setelah data BKU selesai dibaca.');});
 async function renderDashboard(){
   const tbody=document.getElementById('dashboardTableBody');
   if(!tbody||typeof ns.getAllProjects!=='function')return;

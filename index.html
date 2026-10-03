@@ -25,7 +25,6 @@
   <div class="sidebar-label">NAVIGASI</div>
   <nav class="sidebar-nav" role="tablist" aria-label="Modul aplikasi">
     <button id="tabDashboardBtn" class="side-btn active" type="button" role="tab" aria-selected="true"><span class="side-icon">▦</span><span>Dashboard</span></button>
-    <button id="tabProfilBtn" class="side-btn" type="button" role="tab" aria-selected="false"><span class="side-icon">◉</span><span>PROFIL</span></button>
     <button id="tabBkuBtn" class="side-btn" type="button" role="tab" aria-selected="false"><span class="side-icon">1</span><span>EKSTRAKSI BKU</span></button>
     <button id="tabSuratBtn" class="side-btn locked" type="button" role="tab" aria-selected="false" disabled><span class="side-icon">2</span><span>SURAT PERINTAH</span></button>
     <button id="tabPajakBtn" class="side-btn locked" type="button" role="tab" aria-selected="false" disabled><span class="side-icon">3</span><span>HITUNG PAJAK</span></button>
@@ -33,11 +32,39 @@
   <div class="sidebar-foot">SPMU OTOMATIS<br><small>Panel kerja terpadu</small></div>
 </aside>
 <main class="workspace-main">
+<div class="workspace-topbar">
+  <div class="topbar-context"><span class="topbar-dot"></span><span id="topbarSectionName">Dashboard SPMU</span></div>
+  <div class="topbar-actions">
+    <button id="topbarProfileBtn" class="profile-trigger" type="button" aria-haspopup="dialog" aria-expanded="false" title="Buka profil & pengaturan">
+      <span class="profile-trigger-avatar" id="profileTriggerAvatar">SB</span>
+      <span class="profile-trigger-copy"><b id="profileTriggerName">Profil Sekolah</b><small id="profileTriggerMeta">Pengaturan dokumen</small></span>
+      <span class="profile-trigger-chevron">⌄</span>
+    </button>
+  </div>
+</div>
 <div id="tabDashboard" class="tab-panel active dashboard-group" role="tabpanel">
   <section class="card hero"><div class="top"><div><div class="eyebrow">ARKAS • FINANCIAL DOCUMENT TOOL</div><h1 class="title">Sistem Informasi Akuntansi &amp; Pengelolaan BOSP (SIAP BOS)</h1><div class="muted">Ekstrak dan validasi BKU, buat Surat Perintah Mengeluarkan Uang (SPMU) dan Kwitansi secara otomatis, lalu periksa transaksi pajak dalam satu aplikasi.</div><div class="creator">Dikembangkan oleh <strong>MR. LOADING</strong></div></div><span class="badge">✦ PORTABLE • TANPA INSTALASI</span></div><div class="steps"><span class="step"><i>1</i> Pilih dokumen BKU</span><span class="step"><i>2</i> Ekstrak &amp; validasi BKU</span><span class="step"><i>3</i> Periksa hasil ekstraksi</span><span class="step"><i>4</i> Buat Surat Perintah &amp; Kwitansi</span><span class="step"><i>5</i> Cetak / PDF A4</span></div></section>
   <section class="dx-head">
     <div><div class="dx-eyebrow"><span class="dx-live"></span>RINGKASAN PEKERJAAN TERSIMPAN</div><h2>Dashboard SPMU</h2><p>Rekap otomatis dari seluruh SPMU yang sudah disimpan di Tab SURAT PERINTAH.</p></div>
     <div class="dx-head-actions"><span class="dx-updated" id="dashUpdated"></span><button id="dashboardRefreshBtn" class="dx-refresh" type="button"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg><span>Refresh</span></button></div>
+  </section>
+  <section class="dashboard-commandbar">
+    <div class="dashboard-quick-actions">
+      <span class="command-label">Akses cepat</span>
+      <button type="button" class="command-btn" id="dashGoBku">＋ Baca BKU</button>
+      <button type="button" class="command-btn" id="dashGoSurat">▣ Surat Perintah</button>
+      <button type="button" class="command-btn" id="dashGoPajak">% Hitung Pajak</button>
+    </div>
+    <div class="dashboard-filter">
+      <label for="dashCategoryFilter">Filter kategori</label>
+      <select id="dashCategoryFilter" aria-label="Filter kategori dashboard">
+        <option value="all">Semua kategori</option>
+        <option value="Belanja Modal : Peralatan dan Mesin">Modal — Peralatan &amp; Mesin</option>
+        <option value="Belanja Modal : Aset Tetap Lainya">Modal — Aset Tetap Lainnya</option>
+        <option value="Belanja Operasional : Barang dan Jasa">Operasional — Barang &amp; Jasa</option>
+        <option value="Belanja Operasional : Pegawai">Operasional — Pegawai</option>
+      </select>
+    </div>
   </section>
   <section class="dx-kpis">
     <article class="dx-kpi k-count"><div class="dx-kpi-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></div><span>Total SPMU Tersimpan</span><b id="dashProjectCount">0</b><small id="dashProjectHint">Belum ada data</small></article>
@@ -57,15 +84,21 @@
   <section id="categoryDataView" class="card dashboard-category-data" hidden><div class="table-wrap"><table class="data-table"><thead><tr><th>Kategori Belanja</th><th class="num">Jumlah (Rp)</th><th class="num">Proporsi</th></tr></thead><tbody id="categoryDataBody"></tbody></table></div></section>
   <section class="card dashboard-detail"><div class="toolbar"><div><div class="section-title">Rekap Tersimpan</div><div class="section-sub">Pantau pekerjaan, tujuan pembayaran, kategori, waktu penyimpanan, dan nilai setiap SPMU. Gunakan pencarian untuk menemukan data tersimpan.</div></div><input id="dashSearch" class="search" type="search" placeholder="Cari pekerjaan / pembayaran / kategori / no. bukti…" aria-label="Cari rekap"></div><div class="table-wrap"><table class="data-table"><thead><tr><th>No</th><th>Pekerjaan</th><th>Untuk Pembayaran</th><th>Kategori</th><th>Tanggal Simpan</th><th class="num">Nilai Pengeluaran</th></tr></thead><tbody id="dashboardTableBody"><tr><td colspan="6" class="empty">Belum ada pekerjaan tersimpan.</td></tr></tbody></table></div></section>
 </div>
-<div id="tabProfil" class="tab-panel profil-group" role="tabpanel">
-<section class="pf-hero"><div><div class="dx-eyebrow"><span class="dx-live"></span>PROFILE SEKOLAH</div><h2>Identitas sekolah untuk seluruh dokumen</h2><p>Data identitas dipakai otomatis pada kop, nomor, isi, dan tanda tangan Surat Perintah serta Kwitansi. Data bertanda <b>OTOMATIS BKU</b> terisi saat BKU dibaca.</p></div><div id="pfHeroStatus" class="pf-hero-status">✓ Profil siap digunakan pada Surat &amp; Kwitansi</div></section>
-<div class="pf-identity-state">
-  <div>
-    <span class="pf-state-dot"></span>
-    <div><b>Status identitas &amp; proses surat</b><small>Informasi ini dipakai otomatis pada Surat Perintah dan Kwitansi.</small></div>
-  </div>
-  <div id="identityStatus" class="auto-status">● Menunggu data identitas BKU. Baca PDF terlebih dahulu.</div>
-</div>
+<div id="profileModal" class="profile-modal" aria-hidden="true">
+  <div class="profile-modal-backdrop" data-profile-close="true"></div>
+  <section class="profile-modal-card" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+    <header class="profile-modal-head">
+      <div class="profile-modal-heading">
+        <div class="profile-avatar-large" id="profileAvatarLarge">SB</div>
+        <div><div class="dx-eyebrow"><span class="dx-live"></span>PROFIL SEKOLAH</div><h2 id="profileModalTitle">Profil &amp; Pengaturan</h2><p>Identitas sekolah dan pengaturan dokumen yang dipakai otomatis pada Surat Perintah dan Kwitansi.</p></div>
+      </div>
+      <button id="profileModalClose" class="profile-modal-close" type="button" aria-label="Tutup profil">×</button>
+    </header>
+    <div class="profile-modal-status">
+      <div><span class="pf-state-dot"></span><div><b>Status identitas &amp; proses surat</b><small>Informasi ini dipakai otomatis pada Surat Perintah dan Kwitansi.</small></div></div>
+      <div id="identityStatus" class="auto-status">● Menunggu data identitas BKU. Baca PDF terlebih dahulu.</div>
+    </div>
+    <div class="profile-modal-body">
 <div class="pf-grid">
 <section class="pf-card">
 <h3 class="pf-title"><span class="pf-title-icon">ID</span> Identitas Sekolah &amp; Pejabat <span class="pf-title-tag">OTOMATIS BKU</span></h3>
@@ -102,7 +135,9 @@
   <button id="saveProfileBtn" type="button" class="btn primary pf-save-btn">💾 Simpan Profil</button>
 </div>
 </section>
-</div>
+ </div>
+    </div>
+  </section>
 </div>
 <div id="tabBku" class="tab-panel bku-group" role="tabpanel">
 <section class="card"><div class="upload-head"><div class="upload-icon">⇧</div><div><div class="section-title">Impor dokumen BKU</div><div class="section-sub">Pilih berkas sumber untuk mulai mengekstrak transaksi.</div></div></div><div class="controls"><input id="fileInput" type="file" accept=".pdf,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"><button id="readBtn" class="btn primary" disabled>◈ &nbsp; BACA DATA</button><button id="saveProjectBtn" class="btn project-save-btn" type="button">💾 &nbsp; SIMPAN PEKERJAAN</button><button id="openProjectBtn" class="btn project-open-trigger" type="button">📂 &nbsp; BUKA PEKERJAAN</button><button id="projectBackupAllMainBtn" class="btn project-backup-all-btn" type="button">⇩ &nbsp; CADANGKAN SEMUA</button><button id="exportBtn" class="btn success" disabled>⇩ &nbsp; EXPORT EXCEL</button><button id="clearBtn" class="btn secondary">↺ &nbsp; RESET</button></div><div class="project-save-row"><span id="projectSaveName">Belum ada pekerjaan tersimpan.</span><span id="projectSaveStatus" class="project-save-status">Penyimpanan lokal siap digunakan.</span></div><div class="hint" style="margin-top:12px">Format didukung: PDF, XLSX, dan XLS. <b>Hanya BKU Kecamatan Lebak Wangi</b> yang diterima. Baris dengan Pengeluaran &gt; 0 akan diproses, kecuali Tarik Tunai yang merupakan pemindahan dana internal.</div></section>

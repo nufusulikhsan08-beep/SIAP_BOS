@@ -23,7 +23,7 @@ restoreSavedProfile();
 $('editProfileBtn')?.addEventListener('click',()=>{setProfileLocked(false);$('suratAlamat')?.focus();});
 $('saveProfileBtn')?.addEventListener('click',()=>{
   const profile={};for(const key of profileKeys){const el=suratElement(key);profile[key]=String(el?.value??state.surat[key]??'');state.surat[key]=profile[key];}
-  try{localStorage.setItem(PROFILE_STORAGE_KEY,JSON.stringify(profile));setProfileLocked(true);ns.markProjectDirty?.();ns.scheduleProjectAutoSave?.();}
+  try{localStorage.setItem(PROFILE_STORAGE_KEY,JSON.stringify(profile));setProfileLocked(true);syncProfileHeader();closeProfile();ns.markProjectDirty?.();ns.scheduleProjectAutoSave?.();}
   catch(e){window.alert('Profil gagal disimpan pada browser: '+(e?.message||e));}
 });
 const workspaceShell=document.querySelector('.workspace-shell');
@@ -39,7 +39,40 @@ const setSidebarCollapsed=(collapsed)=>{
 };
 $('sidebarToggle')?.addEventListener('click',()=>setSidebarCollapsed(!workspaceShell?.classList.contains('sidebar-collapsed')));
 $('tabDashboardBtn')?.addEventListener('click',()=>{setTab('dashboard');ns.renderDashboard?.();});
-$('tabProfilBtn')?.addEventListener('click',()=>{setTab('profil');});
+const profileModal=$('profileModal');
+const profileTrigger=$('topbarProfileBtn');
+const profileClose=$('profileModalClose');
+function profileInitials(){
+  const school=String(state.surat.sd||'').trim();
+  const words=school.split(/\s+/).filter(Boolean);
+  return (words.length>1?words.slice(0,2).map(w=>w[0]).join(''):school.slice(0,2)||'SB').toUpperCase();
+}
+function syncProfileHeader(){
+  const initials=profileInitials();
+  const school=String(state.surat.sd||'').trim()||'Profil Sekolah';
+  const npsn=String(state.surat.npsn||'').trim();
+  ['profileTriggerAvatar','profileAvatarLarge'].forEach(id=>{const el=$(id);if(el)el.textContent=initials;});
+  const name=$('profileTriggerName');if(name)name.textContent=school;
+  const meta=$('profileTriggerMeta');if(meta)meta.textContent=npsn?'NPSN '+npsn:'Pengaturan dokumen';
+}
+function openProfile(){
+  if(!profileModal)return;
+  syncProfileHeader();
+  profileModal.classList.add('open');profileModal.setAttribute('aria-hidden','false');
+  profileTrigger?.setAttribute('aria-expanded','true');
+  document.body.classList.add('profile-modal-open');
+}
+function closeProfile(){
+  if(!profileModal)return;
+  profileModal.classList.remove('open');profileModal.setAttribute('aria-hidden','true');
+  profileTrigger?.setAttribute('aria-expanded','false');
+  document.body.classList.remove('profile-modal-open');
+}
+profileTrigger?.addEventListener('click',openProfile);
+profileClose?.addEventListener('click',closeProfile);
+profileModal?.addEventListener('click',e=>{if(e.target?.dataset?.profileClose==='true')closeProfile();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&profileModal?.classList.contains('open'))closeProfile();});
+syncProfileHeader();
 
 $('tabBkuBtn').addEventListener('click',()=>{setTab('bku');ns.markProjectDirty?.();});
 $('fileInput').addEventListener('change',e=>{ns.detachActiveProject?.();state.file=e.target.files?.[0]||null;state.category='';if($('categorySelect'))$('categorySelect').value='';state.rows=[];state.rawRows=[];state.result=null;state.surat.bukti='';state.surat.rowIndex=-1;state.surat.kepada='';state.surat.untukPembayaran='';state.suratByBukti={};resetAutoIdentity();$('readBtn').disabled=!state.file;$('status').textContent=state.file?`File dipilih: ${state.file.name}. Tekan BACA DATA untuk menjalankan MR. LOADING.`:'Siap. Pilih dokumen BKU.';ns.disableSuratSection();render();});
