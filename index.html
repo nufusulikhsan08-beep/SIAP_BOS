@@ -134,10 +134,20 @@
     </div>
   </div>
   <div class="isi-group">
-    <div class="isi-group-head"><span class="isi-step">2</span><div><b>Penerima &amp; Pembayaran</b><small>Diisi manual untuk setiap No. Bukti</small></div></div>
+    <div class="isi-group-head"><span class="isi-step">2</span><div><b>Penerima &amp; Pembayaran</b><small>Ketik sendiri atau pilih sugesti dari data tersimpan</small></div></div>
     <div class="isi-fields">
-      <div class="field"><label for="suratKepada">Harap Dibayar Kepada <span class="req">*</span></label><input id="suratKepada" placeholder="Nama penerima/pihak yang dibayar"></div>
-      <div class="field"><label for="suratUntukPembayaran">Untuk Pembayaran <span class="req">*</span> <span class="manual-tag">INPUT MANUAL</span></label><textarea id="suratUntukPembayaran" placeholder="Tulis tujuan pembayaran secara manual sesuai kebutuhan surat perintah"></textarea></div>
+      <div class="field">
+        <label for="suratKepada">Harap Dibayar Kepada <span class="req">*</span></label>
+        <input id="suratKepada" list="suratKepadaDatalist" autocomplete="off" placeholder="Nama penerima/pihak yang dibayar">
+        <datalist id="suratKepadaDatalist"></datalist>
+        <div id="suratKepadaSuggestions" class="surat-suggestion-box" aria-live="polite"></div>
+      </div>
+      <div class="field">
+        <label for="suratUntukPembayaran">Untuk Pembayaran <span class="req">*</span> <span class="manual-tag">INPUT MANUAL</span></label>
+        <textarea id="suratUntukPembayaran" list="suratUntukPembayaranDatalist" autocomplete="off" placeholder="Tulis tujuan pembayaran secara manual sesuai kebutuhan surat perintah"></textarea>
+        <datalist id="suratUntukPembayaranDatalist"></datalist>
+        <div id="suratUntukPembayaranSuggestions" class="surat-suggestion-box" aria-live="polite"></div>
+      </div>
     </div>
   </div>
   <div class="isi-group">

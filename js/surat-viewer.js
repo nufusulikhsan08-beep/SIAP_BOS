@@ -208,8 +208,10 @@ function printBatchSurat(indices,docType='surat'){
     .surat-page{position:relative;width:210mm;height:297mm;min-height:297mm;box-sizing:border-box;margin:0;padding:11mm 15mm 17mm;background:#fff;overflow:hidden;break-after:page;page-break-after:always}
     .surat-page:last-child{break-after:auto;page-break-after:auto}
     .surat-page-content{height:269mm;overflow:hidden}
-    .surat-page-footer{position:absolute;left:15mm;right:15mm;bottom:5mm;min-height:8mm;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.8fr) auto;align-items:center;gap:4mm;border-top:1px solid #aaa;padding-top:1.5mm;box-sizing:border-box;font-size:8pt;font-style:italic;line-height:1.15}
-    .surat-page-footer .sf-bku{justify-self:start;white-space:nowrap}.surat-page-footer .sf-category{justify-self:center;text-align:center;min-width:0;overflow-wrap:anywhere;word-break:break-word}.surat-page-footer .sf-page{justify-self:end;white-space:nowrap}
+    .surat-page-footer{position:absolute;left:15mm;right:15mm;bottom:4mm;min-height:9mm;display:grid;grid-template-columns:minmax(34mm,1fr) minmax(55mm,1.6fr) minmax(28mm,auto);align-items:center;gap:3mm;border-top:1px solid #aaa;padding:1.5mm 0 0;box-sizing:border-box;font-size:7.5pt;font-style:italic;line-height:1.2;z-index:20;background:#fff}
+    .surat-page-footer .sf-bku{justify-self:start;white-space:normal;overflow-wrap:anywhere;word-break:break-word;min-width:0}
+    .surat-page-footer .sf-category{justify-self:center;text-align:center;min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word}
+    .surat-page-footer .sf-page{justify-self:end;white-space:nowrap}
     .surat-bku-box{position:absolute;top:4mm;right:7mm;width:22mm;min-width:22mm;height:6mm;padding:0 2mm;box-sizing:border-box;border:1.25px solid #000;display:flex;align-items:center;justify-content:center;font-size:9pt;font-weight:700;color:#000;background:#fff;z-index:10}
     .page-block{break-inside:avoid;page-break-inside:avoid}
     .uraian-table-block{break-inside:auto;page-break-inside:auto}

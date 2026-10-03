@@ -44,13 +44,13 @@ $('tabProfilBtn')?.addEventListener('click',()=>{setTab('profil');});
 $('tabBkuBtn').addEventListener('click',()=>{setTab('bku');ns.markProjectDirty?.();});
 $('fileInput').addEventListener('change',e=>{ns.detachActiveProject?.();state.file=e.target.files?.[0]||null;state.category='';if($('categorySelect'))$('categorySelect').value='';state.rows=[];state.rawRows=[];state.result=null;state.surat.bukti='';state.surat.rowIndex=-1;state.surat.kepada='';state.surat.untukPembayaran='';state.suratByBukti={};resetAutoIdentity();$('readBtn').disabled=!state.file;$('status').textContent=state.file?`File dipilih: ${state.file.name}. Tekan BACA DATA untuk menjalankan MR. LOADING.`:'Siap. Pilih dokumen BKU.';ns.disableSuratSection();render();});
 $('categorySelect')?.addEventListener('change',e=>{state.category=String(e.target.value||'');if(state.surat?.rowIndex>=0){ns.captureCurrentSuratDraft?.();}ns.markProjectDirty?.();});
-$('tabSuratBtn').addEventListener('click',()=>{if(!$('tabSuratBtn').disabled){ns.readSuratFields();setTab('surat');ns.renderSurat();}});
+$('tabSuratBtn').addEventListener('click',()=>{if(!$('tabSuratBtn').disabled){ns.readSuratFields();setTab('surat');ns.refreshSuratSuggestions?.();ns.renderSurat();}});
 $('tabPajakBtn').addEventListener('click',()=>{if(!$('tabPajakBtn').disabled){setTab('pajak');ns.renderTaxes();}});
 $('searchRows').addEventListener('input',e=>{state.search=e.target.value||'';render();ns.scheduleProjectAutoSave?.();});
 $('readBtn').addEventListener('click',ns.extractBkuData);
 $('exportBtn').addEventListener('click',ns.exportXlsx);
 $('exportRawBtn').addEventListener('click',ns.exportRawXlsx);
-$('suratBukti').addEventListener('change',()=>{ns.captureCurrentSuratDraft?.();ns.fillSurat();ns.scheduleProjectAutoSave?.();});
+$('suratBukti').addEventListener('change',()=>{ns.captureCurrentSuratDraft?.();ns.fillSurat();ns.refreshSuratSuggestions?.();ns.scheduleProjectAutoSave?.();});
 $('suratPrevBtn').addEventListener('click',()=>{ns.prevSurat();ns.scheduleProjectAutoSave?.();});
 $('suratPreviewBtn').addEventListener('click',()=>ns.setDocMode('surat'));
 $('kwitansiPreviewBtn').addEventListener('click',()=>ns.setDocMode('kwitansi'));
@@ -63,6 +63,7 @@ $('suratSaveDataBtn')?.addEventListener('click',async()=>{
   try{
     if(btn)btn.disabled=true;
     await ns.saveCurrentSuratData?.();
+    ns.refreshSuratSuggestions?.();
   }catch(e){
     window.alert(e?.message||String(e));
     const st=$('suratDraftSaveStatus');if(st){st.textContent='⚠ Gagal menyimpan data: '+(e?.message||e);st.className='surat-draft-save-status error';}
@@ -106,5 +107,5 @@ render();
 ns.renderDashboard?.();
 ns.disableSuratSection();
 ns.refreshSuratSaveState?.();
-ns.initProjectStore?.();
+Promise.resolve(ns.initProjectStore?.()).then(()=>ns.refreshSuratSuggestions?.());
 })(window.SPMU=window.SPMU||{});

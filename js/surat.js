@@ -19,6 +19,112 @@ function ensureSuratDraftStore(){
   if(!state.suratByBukti || typeof state.suratByBukti!=='object' || Array.isArray(state.suratByBukti))state.suratByBukti={};
   return state.suratByBukti;
 }
+
+const SURAT_SUGGESTION_CONFIG={
+  kepada:{inputId:'suratKepada',listId:'suratKepadaDatalist',boxId:'suratKepadaSuggestions',label:'Harap Dibayar Kepada'},
+  untukPembayaran:{inputId:'suratUntukPembayaran',listId:'suratUntukPembayaranDatalist',boxId:'suratUntukPembayaranSuggestions',label:'Untuk Pembayaran'}
+};
+
+function normalizeSuggestionText(value){
+  return String(value??'').replace(/\s+/g,' ').trim();
+}
+function rankSuggestionValues(items,limit=8){
+  const map=new Map();
+  for(const item of items){
+    const value=normalizeSuggestionText(item?.value??item);
+    if(!value)return;
+    const key=value.toLocaleLowerCase('id-ID');
+    const prev=map.get(key)||{value,count:0,last:0};
+    prev.count+=Number(item?.count||1);
+    prev.last=Math.max(prev.last,Number(item?.last||0));
+    if(value.length>prev.value.length && !prev.value)prev.value=value;
+    map.set(key,prev);
+  }
+  return [...map.values()]
+    .sort((a,b)=>b.count-a.count || b.last-a.last || a.value.length-b.value.length || a.value.localeCompare(b.value,'id'))
+    .slice(0,limit)
+    .map(x=>x.value);
+}
+
+async function getStoredSuratSuggestionValues(){
+  const kepada=[],untuk=[];
+  const pushDraft=(draft,projectUpdatedAt=0)=>{
+    if(!draft||typeof draft!=='object')return;
+    const last=Math.max(Number(draft.savedAt)||0,Number(projectUpdatedAt)||0);
+    const k=normalizeSuggestionText(draft.kepada);
+    const u=normalizeSuggestionText(draft.untukPembayaran);
+    if(k)kepada.push({value:k,count:1,last});
+    if(u)untuk.push({value:u,count:1,last});
+  };
+
+  // Data yang sudah tersimpan pada pekerjaan BKU yang sedang aktif.
+  for(const draft of Object.values(ensureSuratDraftStore()))pushDraft(draft);
+  pushDraft(state.surat);
+
+  // Tambahkan riwayat dari pekerjaan BKU lain yang sudah disimpan di browser.
+  // Semua sumber tetap berupa isian yang pernah disimpan user; tidak membuat/menebak nama baru.
+  try{
+    const projects=typeof ns.getAllProjects==='function'?await ns.getAllProjects():[];
+    for(const project of projects||[]){
+      let source=project;
+      // localStorage fallback index intentionally stores lightweight metadata.
+      // Hydrate only when needed so old saved BKU/SPMU data can still provide suggestions.
+      if((!source?.state?.suratByBukti || typeof source.state.suratByBukti!=='object') && project?._fallback && typeof ns.getProject==='function'){
+        try{source=await ns.getProject(project.id)||project;}catch(_){source=project;}
+      }
+      const drafts=source?.state?.suratByBukti;
+      if(!drafts||typeof drafts!=='object'||Array.isArray(drafts))continue;
+      for(const draft of Object.values(drafts))pushDraft(draft,source.updatedAt||project.updatedAt);
+    }
+  }catch(e){
+    // Saran dari pekerjaan aktif tetap ditampilkan bila daftar pekerjaan historis tidak dapat dibaca.
+    console.warn('Riwayat sugesti Surat Perintah tidak dapat dibaca:',e);
+  }
+
+  return {
+    kepada:rankSuggestionValues(kepada,8),
+    untukPembayaran:rankSuggestionValues(untuk,8)
+  };
+}
+
+function paintSuratSuggestionField(field,values){
+  const cfg=SURAT_SUGGESTION_CONFIG[field];
+  if(!cfg)return;
+  const list=$(cfg.listId),box=$(cfg.boxId);
+  if(list){
+    list.innerHTML=values.map(v=>`<option value="${esc(v)}"></option>`).join('');
+  }
+  if(!box)return;
+  if(!values.length){
+    box.innerHTML='<span class="surat-suggestion-empty">Belum ada riwayat tersimpan untuk kolom ini.</span>';
+    return;
+  }
+  box.innerHTML='<span class="surat-suggestion-label">Sugesti dari data tersimpan:</span>'+values.map(v=>`<button type="button" class="surat-suggestion-chip" data-surat-suggestion="${esc(field)}" data-suggestion-value="${esc(v)}" title="Gunakan sugesti ini">${esc(v)}</button>`).join('');
+  box.querySelectorAll('.surat-suggestion-chip').forEach(btn=>btn.addEventListener('click',()=>{
+    const el=$(cfg.inputId);
+    const value=String(btn.dataset.suggestionValue||'');
+    if(!el||!value)return;
+    el.value=value;
+    state.surat[field]=value;
+    captureCurrentSuratDraft();
+    refreshSuratSaveState();
+    ns.renderSurat?.();
+    ns.scheduleProjectAutoSave?.();
+  }));
+}
+
+async function refreshSuratSuggestions(){
+  try{
+    const suggestions=await getStoredSuratSuggestionValues();
+    paintSuratSuggestionField('kepada',suggestions.kepada);
+    paintSuratSuggestionField('untukPembayaran',suggestions.untukPembayaran);
+    return suggestions;
+  }catch(e){
+    paintSuratSuggestionField('kepada',[]);
+    paintSuratSuggestionField('untukPembayaran',[]);
+    return {kepada:[],untukPembayaran:[]};
+  }
+}
 function getSuratDraft(index=state.surat.rowIndex){
   const store=ensureSuratDraftStore();
   const key=suratDraftKey(index);
@@ -206,7 +312,7 @@ function buildSuratPagesForIndex(index){
   const logoSekolah=state.surat.logoSekolah||'';
   const logoKabupaten=state.surat.logoKabupaten||'assets/logo_kabupaten_serang.png';
   const blocks=buildSuratBlocks(d,num,dateText,tandaTangan,logoSekolah,logoKabupaten);
-  return decorateSuratPages(paginateSurat(blocks),d.bukti);
+  return decorateSuratPages(paginateSurat(blocks),d.bukti,d.category);
 }
 function suratDraftReady(index){
   const draft=getSuratDraft(index);
@@ -625,6 +731,6 @@ function renderSurat(){
 Object.assign(ns,{
   dateToInput,dateDisplay,suratRow,enableSuratSection,disableSuratSection,rawRowsForSurat,suratUraianText,moneyWords,roman,suratData,syncSurat,readSuratFields,updateSuratNextInfo,nextSurat,prevSurat,fillSurat,
   normalizeSchoolName,addressWithKecamatan,splitUraianItems,renderUraianHtml,suratBlock,buildSuratBlocks,createSuratPage,paginateSurat,renderSurat,
-  refreshSuratSaveState,showSuratSavedPopup,hideSuratSavedPopup,suratDraftKey,getSuratDraft,captureCurrentSuratDraft,restoreSuratDraft,updateSuratDraftStatus,saveCurrentSuratData,suratDataForIndex,decorateSuratPages,buildSuratPagesForIndex,suratDraftReady
+  refreshSuratSaveState,showSuratSavedPopup,hideSuratSavedPopup,suratDraftKey,getSuratDraft,captureCurrentSuratDraft,restoreSuratDraft,updateSuratDraftStatus,saveCurrentSuratData,suratDataForIndex,decorateSuratPages,buildSuratPagesForIndex,suratDraftReady,refreshSuratSuggestions,getStoredSuratSuggestionValues
 });
 })(window.SPMU=window.SPMU||{});

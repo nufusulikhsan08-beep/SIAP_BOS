@@ -365,6 +365,7 @@ async function loadProject(id){
   ns.renderTaxes?.();
   ns.setTab?.(s.activeTab||'bku');
   markSaved(p,p._fallback?'Browser fallback':'IndexedDB');
+  await ns.refreshSuratSuggestions?.();
   return p;
 }
 
@@ -462,6 +463,6 @@ async function initProjectStore(){
 Object.assign(ns,{
   initProjectStore,showProjectDialog,closeProjectDialog,loadProject,saveCurrentFromUi,saveActiveProjectNow,
   markProjectDirty:markDirty,scheduleProjectAutoSave:scheduleAutoSave,scheduleAutoSave,
-  getActiveProjectId:()=>activeProjectId,getAllProjects,detachActiveProject,importProjectFile
+  getActiveProjectId:()=>activeProjectId,getAllProjects,getProject,detachActiveProject,importProjectFile
 });
 })(window.SPMU=window.SPMU||{});

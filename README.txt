@@ -216,3 +216,9 @@ UPDATE — 2 OKTOBER 2026: TAB PROFIL & ISI SURAT TERSTRUKTUR
 - Tombol "Simpan Data SPMU" kini berada di bagian paling bawah dan baru aktif setelah No. Bukti, Tanggal, Harap Dibayar Kepada, Untuk Pembayaran, dan Kategori Belanja terisi. Checklist menunjukkan bagian yang belum lengkap.
 - Setelah berhasil disimpan, tampil popup berisi No. Bukti (tutup dengan OK, klik area luar, atau Esc).
 - File yang berubah: index.html, styles.css, js/core.js, js/surat.js, js/main.js.
+
+UPDATE — 3 OKTOBER 2026: SUGESTI INPUT SURAT PERINTAH DARI DATA TERSIMPAN
+- Field "Harap Dibayar Kepada" dan "Untuk Pembayaran" sekarang memiliki autocomplete (datalist) dan tombol sugesti yang dapat diklik.
+- Sumber sugesti hanya berasal dari isian Surat Perintah yang pernah disimpan pengguna pada pekerjaan BKU aktif maupun pekerjaan BKU lain yang tersimpan di browser.
+- Sugesti dirangking berdasarkan frekuensi penggunaan dan waktu penyimpanan; tidak ada nama/tujuan pembayaran yang dibuat atau ditebak oleh aplikasi.
+- Memilih sugesti mengisi field secara langsung, sementara pengguna tetap bebas mengedit atau mengetik nilai baru.
