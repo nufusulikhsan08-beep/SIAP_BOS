@@ -85,7 +85,6 @@ function printSurat(){
     .surat-page .kop .kop-logo-sekolah{right:0!important;left:auto!important}
     .kop .prov{font-size:16pt;font-weight:700;line-height:1.15}
     .kop .school{font-size:18pt;font-weight:700;line-height:1.15;margin-top:2px;text-transform:uppercase}
-    .kop .kab{font-size:12pt;font-weight:700;line-height:1.15}
     .kop .addr,.kop .mail{font-size:9pt;line-height:1.35}
     .paper h2,h2{text-align:center;font-size:15pt;line-height:1.2;margin:7mm 0 1.5mm;text-decoration:underline}
     .nomor{text-align:center;font-size:11pt;line-height:1.2;margin-bottom:8mm}
