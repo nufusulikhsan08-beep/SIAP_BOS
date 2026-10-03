@@ -183,7 +183,7 @@ UPDATE DASHBOARD v3 — TAMPILAN LEBIH MODERN
 - Header dashboard baru dengan indikator "live", waktu pembaruan, dan tombol Refresh bergaya modern.
 - 4 kartu KPI beraksen warna + ikon, menampilkan persentase Modal/Operasional terhadap total.
 - Komposisi Belanja kini berupa grafik donat dengan legenda persentase.
-- Tren Bulanan (6 bulan terakhir) dari tanggal simpan SPMU.
+- Rekap Pajak pada Dashboard menampilkan Jumlah Pajak Siplah dan Jumlah Pajak Non-Siplah berdasarkan seluruh BKU tersimpan.
 - Kolom pencarian pada tabel Rekap Tersimpan (pekerjaan / kategori / no. bukti).
 - Hanya index.html (bagian dashboard), js/dashboard.js, dan styles.css (blok dx- di akhir file) yang berubah. Tab lain tidak terpengaruh.
 
@@ -222,3 +222,8 @@ UPDATE — 3 OKTOBER 2026: SUGESTI INPUT SURAT PERINTAH DARI DATA TERSIMPAN
 - Sumber sugesti hanya berasal dari isian Surat Perintah yang pernah disimpan pengguna pada pekerjaan BKU aktif maupun pekerjaan BKU lain yang tersimpan di browser.
 - Sugesti dirangking berdasarkan frekuensi penggunaan dan waktu penyimpanan; tidak ada nama/tujuan pembayaran yang dibuat atau ditebak oleh aplikasi.
 - Memilih sugesti mengisi field secara langsung, sementara pengguna tetap bebas mengedit atau mengetik nilai baru.
+
+PEMBARUAN DASHBOARD — REKAP PAJAK
+- Bagian Tren Bulanan pada Dashboard diganti menjadi Rekap Pajak.
+- Rekap menampilkan Jumlah Pajak Siplah dan Jumlah Pajak Non-Siplah.
+- Nilai mengambil hasil perhitungan pajak yang sama dengan Tab HITUNG PAJAK.

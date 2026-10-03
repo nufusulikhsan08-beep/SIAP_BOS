@@ -1246,20 +1246,13 @@
 .dx-legend li{display:flex;align-items:center;gap:10px;font-size:13px;color:#4f5d77;padding:9px 11px;border-radius:12px;background:#f7f9fd}
 .dx-legend s{width:11px;height:11px;border-radius:4px;flex:0 0 11px}
 .dx-legend span{flex:1}.dx-legend b{color:#16213f;font-variant-numeric:tabular-nums}
-.dx-trend{height:190px;display:flex;align-items:flex-end;gap:12px;margin-top:18px;padding-top:6px}
-.dx-col{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;min-width:0}
-.dx-col i{display:block;width:100%;max-width:46px;border-radius:10px 10px 4px 4px;background:linear-gradient(180deg,#6b5cda,#3159d9);transition:filter .2s,transform .2s;transform-origin:bottom;animation:dxGrow .6s ease both}
-.dx-col:hover i{filter:brightness(1.12)}
-@keyframes dxGrow{from{transform:scaleY(0)}}
-.dx-col em{font-style:normal;font-size:10px;color:#6a7791;font-weight:700;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
-.dx-col span{font-size:11px;color:#8490a5;font-weight:700}
 #tabDashboard .dash-bar-track{height:14px}
 #tabDashboard .dashboard-detail .search{margin-left:auto}
 #tabDashboard .dash-total-row td{background:#f5f7fc;font-weight:900}
 #tabDashboard .comp-empty{padding:26px 10px;color:#8994a8;text-align:center}
 @media(max-width:1050px){.dx-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.dx-row{grid-template-columns:1fr}}
 @media(max-width:520px){.dx-kpis{grid-template-columns:1fr}.dx-donut-wrap{justify-content:center}}
-@media(prefers-reduced-motion:reduce){.dx-live,.dx-col i{animation:none}}
+@media(prefers-reduced-motion:reduce){.dx-live{animation:none}}
 
 /* ===== PROFIL SEKOLAH ===== */
 #tabProfil{--sv-blue:#1e9bd7;--sv-blue-soft:#e8f5fc;--sv-ink:#111827;--sv-mute:#6b7280;--sv-line:#e6ebf2}
@@ -1422,3 +1415,16 @@
 #tabProfil .pf-lock-status{margin-left:4px;padding:5px 8px;border-radius:999px;background:#fff4df;color:#986000;font-size:8px;font-weight:900;letter-spacing:.35px;white-space:nowrap}
 #tabProfil .pf-lock-status.is-locked{background:#e7f8ef;color:#16804c}
 #tabProfil .pf-card:nth-child(2) input[readonly]{background:#f2f5fa;border-color:#e1e7f0;color:#52617a;cursor:default}
+
+
+/* Dashboard — Rekap Pajak menggantikan Tren Bulanan */
+#tabDashboard .dx-tax-recap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+#tabDashboard .dx-tax-box{min-height:142px;padding:18px;border:1px solid #e1e7f1;border-radius:16px;background:#fff;display:flex;flex-direction:column;justify-content:center;gap:6px;box-shadow:0 6px 18px rgba(30,41,59,.045)}
+#tabDashboard .dx-tax-box span{font-size:11px;font-weight:850;letter-spacing:.02em;color:#65738b}
+#tabDashboard .dx-tax-box b{font-size:23px;line-height:1.2;color:#1d2d4f;font-variant-numeric:tabular-nums;white-space:nowrap}
+#tabDashboard .dx-tax-box small{font-size:10px;color:#8a95a8}
+#tabDashboard .dx-tax-siplah{border-color:#d8e4ff;background:linear-gradient(145deg,#fff,#f4f7ff)}
+#tabDashboard .dx-tax-siplah b{color:#3159d9}
+#tabDashboard .dx-tax-nonsiplah{border-color:#d8efdf;background:linear-gradient(145deg,#fff,#f4fbf6)}
+#tabDashboard .dx-tax-nonsiplah b{color:#14865a}
+@media(max-width:650px){#tabDashboard .dx-tax-recap{grid-template-columns:1fr}}

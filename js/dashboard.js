@@ -51,7 +51,7 @@ async function renderDashboard(){
     const taxSummary=projects.reduce((a,p)=>{const t=typeof ns.getTaxSummary==='function'?ns.getTaxSummary(Array.isArray(p?.state?.rawRows)?p.state.rawRows:[]):{};a.siplah+=Number(t.siplahTotal)||0;a.non+=Number(t.nonSiplahTotal)||0;a.grandTotal+=Number(t.grandTotal)||0;return a;},{siplah:0,non:0,grandTotal:0});
     const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v};
     set('dashProjectCount',savedSPMUs.length);set('dashModalTotal',money(sums[CATEGORY.modalMesin]+sums[CATEGORY.modalLain]));
-    set('dashOperasionalTotal',money(sums[CATEGORY.operBarang]+sums[CATEGORY.operPegawai]));set('dashTaxTotal',money(taxSummary.grandTotal));set('dashTaxDetail','Akumulasi dari '+projects.length+' BKU tersimpan • SIPLah '+money(taxSummary.siplah)+' • Non SIPLah '+money(taxSummary.non));set('dashUpdated','Diperbarui '+new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})+' • '+projects.length+' pekerjaan');
+    set('dashOperasionalTotal',money(sums[CATEGORY.operBarang]+sums[CATEGORY.operPegawai]));set('dashTaxSiplah',money(taxSummary.siplah));set('dashTaxNonSiplah',money(taxSummary.non));set('dashTaxTotal',money(taxSummary.grandTotal));set('dashTaxDetail','Akumulasi dari '+projects.length+' BKU tersimpan • SIPLah '+money(taxSummary.siplah)+' • Non SIPLah '+money(taxSummary.non));set('dashUpdated','Diperbarui '+new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})+' • '+projects.length+' pekerjaan');
     const cm=document.getElementById('chartModal'),co=document.getElementById('chartOperasional');
     const categoryRows=Object.entries(sums); const categoryTotal=categoryRows.reduce((a,[,v])=>a+v,0);
     const dataBody=document.getElementById('categoryDataBody');
@@ -67,12 +67,6 @@ async function renderDashboard(){
         let acc=0;const stops=categoryRows.map(([n,v])=>{const s=acc,e=acc+v/categoryTotal*100;acc=e;return COL[CAT_CLS[n]]+' '+s+'% '+e+'%';}).join(',');
         comp.innerHTML=`<div class="dx-donut-wrap"><div class="dx-donut" style="background:conic-gradient(${stops})"><div class="dx-donut-hole"><span>Total</span><b>${money(categoryTotal)}</b></div></div><ul class="dx-legend">${categoryRows.map(([n,v])=>`<li><s style="background:${COL[CAT_CLS[n]]}"></s><span>${ns.esc(CAT_SHORT[n])}</span><b>${pct(v)}</b></li>`).join('')}</ul></div>`;
       }else comp.innerHTML='<div class="comp-empty">Belum ada SPMU tersimpan, komposisi akan tampil setelah ada data.</div>';
-    }
-    const trendEl=document.getElementById('dashTrend');
-    if(trendEl){
-      const byMonth={};savedSPMUs.forEach(it=>{if(!it.savedAt)return;const d=new Date(it.savedAt),k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');byMonth[k]=(byMonth[k]||0)+it.nominal;});
-      const keys=Object.keys(byMonth).sort().slice(-6),mx=Math.max(0,...keys.map(k=>byMonth[k]));
-      trendEl.innerHTML=keys.length?`<div class="dx-trend">${keys.map(k=>{const [y,m]=k.split('-');const lbl=new Date(+y,+m-1,1).toLocaleDateString('id-ID',{month:'short',year:'2-digit'});return `<div class="dx-col" title="${lbl}: ${money(byMonth[k])}"><em>${money(byMonth[k]).replace('Rp','').trim()}</em><i style="height:${mx>0?Math.max(6,byMonth[k]/mx*100):6}%"></i><span>${lbl}</span></div>`;}).join('')}</div>`:'<div class="comp-empty">Tren akan tampil setelah ada SPMU tersimpan.</div>';
     }
     const mm=Math.max(sums[CATEGORY.modalMesin],sums[CATEGORY.modalLain]), om=Math.max(sums[CATEGORY.operBarang],sums[CATEGORY.operPegawai]);
     if(cm)cm.innerHTML=barHtml('Peralatan dan Mesin',sums[CATEGORY.modalMesin],mm)+barHtml('Aset Tetap Lainya',sums[CATEGORY.modalLain],mm);
